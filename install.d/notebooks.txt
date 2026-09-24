@@ -8,6 +8,11 @@
 # Blank lines and lines starting with '#' are ignored.
 # List available IDs with: crocogallery template --list-notebooks
 crocodash.tutorial
+crocodash.projects.ocean_only projects/ocean_only
+crocodash.projects.cice projects/cice
+crocodash.projects.ww3 projects/ww3
+crocodash.projects.marbl projects/marbl
+crocodash.projects.KitchenSink projects/kitchen_sink
 model2obs.tutorial_CrocoLake_map_temperature
 dart.tutorial1_real_observations
 dart.tutorial2_synthetic_observations
