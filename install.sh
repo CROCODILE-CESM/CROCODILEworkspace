@@ -23,7 +23,8 @@ Package Selection:
 Installation Options:
   -d, --default     Use default paths for all packages (default behaviour, non-interactive)
   -p, --paths       Specify paths for all packages (interactive)
-  -f, --force       Remove and reinstall selected packages if they already exist
+  -f, --force       Remove and reinstall selected packages (and overwrite their
+                    conda environments) if they already exist
   -s, --ssh-github  Use SSH URLs instead of HTTPS for GitHub clones (requires SSH key)
   -e, --envname     Specify prefix for conda environment names (default: none)
   -h, --help        Display this help message
@@ -38,7 +39,8 @@ Examples:
 
 Notes:
   - Multiple flags can be combined
-  - If a package already exists, the installer stops unless -f/--force is used
+  - If a package or conda environment already exists, the installer stops
+    unless -f/--force is used
   - Edit install.d/notebooks.txt to change which gallery notebooks --notebooks renders
   - DART is not installed here: model2obs is pointed at an existing build.
     Override its location with --dart, or by exporting DART_ROOT_PATH.
@@ -132,14 +134,59 @@ mkdir -p $NBS_PATH
 if [[ -n ${ENV_PREFIX:-} ]]; then
     ENV_PREFIX="${ENV_PREFIX}-"
 fi
+
+#### Conda environment existence check
+# Resolve every env name up front (the yml-derived ones need the fresh
+# clones, so this has to run after init.sh) and interrupt the install if any
+# of them already exists, so that nothing gets overwritten without -f.
+
+if [[ "$INSTALL_CROCODASH" -eq 1 ]]; then
+    ENV_NAME=$(awk -F ": " '/^name:/ {print $2}' "$CROCODASH_PATH/environment.yml")
+    CROCODASH_ENV_NAME="${ENV_PREFIX}${ENV_NAME}"
+fi
+if [[ "$INSTALL_MODEL2OBS" -eq 1 ]]; then
+    MODEL2OBS_ENV_NAME="${ENV_PREFIX}""model2obs"
+fi
+if [[ "$INSTALL_MOM6TOOLS" -eq 1 ]]; then
+    ENV_NAME=$(awk -F ": " '/^name:/ {print $2}' "$MOM6TOOLS_PATH/environment.yml")
+    MOM6TOOLS_ENV_NAME="${ENV_PREFIX}${ENV_NAME}"
+fi
+if [[ "$INSTALL_CUPID" -eq 1 ]]; then
+    ENV_NAME=$(awk -F ": " '/^name:/ {print $2}' "$CUPID_PATH"/environments/cupid-infrastructure.yml)
+    CUPID_ENV1_NAME="${ENV_PREFIX}${ENV_NAME}"
+    ENV_NAME=$(awk -F ": " '/^name:/ {print $2}' "$CUPID_PATH"/environments/cupid-analysis.yml)
+    CUPID_ENV2_NAME="${ENV_PREFIX}${ENV_NAME}"
+fi
+if [[ "$INSTALL_CESM_DA" -eq 1 && "$INSTALL_NOTEBOOKS" -eq 1 ]]; then
+    CESM_DA_ENV_NAME="${ENV_PREFIX}CESM_DA"
+fi
+
+if [[ "$FORCE" -ne 1 ]]; then
+    EXISTING_ENVS=()
+    for ENV_NAME in "${CROCODASH_ENV_NAME:-}" "${MODEL2OBS_ENV_NAME:-}" \
+                    "${MOM6TOOLS_ENV_NAME:-}" "${CUPID_ENV1_NAME:-}" \
+                    "${CUPID_ENV2_NAME:-}" "${CESM_DA_ENV_NAME:-}"; do
+        if [[ -n "$ENV_NAME" ]] && conda_env_exists "$ENV_NAME"; then
+            EXISTING_ENVS+=("$ENV_NAME")
+        fi
+    done
+
+    if [[ "${#EXISTING_ENVS[@]}" -gt 0 ]]; then
+        echo "Error: the following conda environments already exist:" >&2
+        for ENV_NAME in "${EXISTING_ENVS[@]}"; do
+            echo "  - $ENV_NAME" >&2
+        done
+        echo "Use -f or --force to overwrite them, or -e/--envname to pick a different prefix." >&2
+        exit 1
+    fi
+fi
+
 # CrocoDash
 if [[ "$INSTALL_CROCODASH" -eq 1 ]]; then
     echo "Installing CrocoDash environment..."
     cd "$CROCODASH_PATH"
     CROCODASH_SHA=$(git rev-parse HEAD)
     cd "$INSTALL_DIR"
-    ENV_NAME=$(awk -F ": " '/^name:/ {print $2}' "$CROCODASH_PATH/environment.yml")
-    CROCODASH_ENV_NAME="${ENV_PREFIX}${ENV_NAME}"
     mamba env create -f "$CROCODASH_PATH"/environment.yml --name ${CROCODASH_ENV_NAME} --yes
     add_env_vars_to_conda "$CROCODASH_ENV_NAME"
     echo "CrocoDash environment installed."
@@ -195,7 +242,6 @@ if [[ "$INSTALL_MODEL2OBS" -eq 1 ]]; then
     cd "$MODEL2OBS_PATH"/install
     MODEL2OBS_SHA=$(git rev-parse HEAD)
     cp envpaths_NCAR.sh envpaths.sh
-    MODEL2OBS_ENV_NAME="${ENV_PREFIX}""model2obs"
     DART_ROOT_PATH=${DART_ROOT_PATH} CONDA_ENV_NAME=${MODEL2OBS_ENV_NAME} ./install_NCAR.sh --tutorial
     cd "$INSTALL_DIR"
     echo "model2obs environment installed."
@@ -211,8 +257,6 @@ if [[ "$INSTALL_MOM6TOOLS" -eq 1 ]]; then
     cd "$MOM6TOOLS_PATH"
     MOM6TOOLS_SHA=$(git rev-parse HEAD)
     cd "$INSTALL_DIR"
-    ENV_NAME=$(awk -F ": " '/^name:/ {print $2}' "$MOM6TOOLS_PATH/environment.yml")
-    MOM6TOOLS_ENV_NAME="${ENV_PREFIX}${ENV_NAME}"
     mamba env create -f "$MOM6TOOLS_PATH"/environment.yml --name ${MOM6TOOLS_ENV_NAME} --yes
     add_env_vars_to_conda "$MOM6TOOLS_ENV_NAME"
     echo "mom6-tools environment installed."
@@ -232,13 +276,9 @@ if [[ "$INSTALL_CUPID" -eq 1 ]]; then
     CUPID_SHA=$(git rev-parse HEAD)
     cd "$INSTALL_DIR"
 
-    ENV_NAME=$(awk -F ": " '/^name:/ {print $2}' "$CUPID_PATH"/environments/cupid-infrastructure.yml)
-    CUPID_ENV1_NAME="${ENV_PREFIX}${ENV_NAME}"
     mamba env create -f "$CUPID_PATH"/environments/cupid-infrastructure.yml --name ${CUPID_ENV1_NAME} --yes
     add_env_vars_to_conda "$CUPID_ENV1_NAME"
 
-    ENV_NAME=$(awk -F ": " '/^name:/ {print $2}' "$CUPID_PATH"/environments/cupid-analysis.yml)
-    CUPID_ENV2_NAME="${ENV_PREFIX}${ENV_NAME}"
     mamba env create -f "$CUPID_PATH"/environments/cupid-analysis.yml --name ${CUPID_ENV2_NAME} --yes
     add_env_vars_to_conda "$CUPID_ENV2_NAME"
 
@@ -276,7 +316,6 @@ if [[ "$INSTALL_CESM_DA" -eq 1 ]]; then
             /^  - pip:/ { print; print "    - pydartdiags"; print "    - dartobsgen"; next }
             { print }
         ' "$CROCODASH_PATH/environment.yml" > "$CESM_DA_ENV_FILE"
-        CESM_DA_ENV_NAME="${ENV_PREFIX}CESM_DA"
         mamba env create -f "$CESM_DA_ENV_FILE" --name ${CESM_DA_ENV_NAME} --yes
         add_env_vars_to_conda "$CESM_DA_ENV_NAME"
         rm -f "$CESM_DA_ENV_FILE"
