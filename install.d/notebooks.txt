@@ -7,7 +7,7 @@
 # (e.g. "dart/" -> workspace/dart/<notebook-id>.ipynb).
 # Blank lines and lines starting with '#' are ignored.
 # List available IDs with: crocogallery template --list-notebooks
-crocodash.tutorial    crocodash/tutorial
+crocodash.tutorial
 model2obs.tutorial_CrocoLake_map_temperature
 dart.tutorial1_real_observations
 dart.tutorial2_synthetic_observations
