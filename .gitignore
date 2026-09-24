@@ -7,6 +7,8 @@ model2obs/
 mom6-tools/
 CUPiD/
 DART/
+croc_cases/
+croc_input/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

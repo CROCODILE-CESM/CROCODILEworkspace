@@ -137,6 +137,7 @@ if [[ "$INSTALL_CROCODASH" -eq 1 ]]; then
     echo "Installing CrocoDash environment..."
     cd "$CROCODASH_PATH"
     CROCODASH_SHA=$(git rev-parse HEAD)
+    CROCODASH_VERSION=$(git describe --tags --always)
     cd "$INSTALL_DIR"
     ENV_NAME=$(awk -F ": " '/^name:/ {print $2}' "$CROCODASH_PATH/environment.yml")
     CROCODASH_ENV_NAME="${ENV_PREFIX}${ENV_NAME}"
@@ -156,15 +157,19 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 ]]; then
     else
         mkdir -p "$CASES_PATH" "$INPUT_PATH"
 
-        # The gallery's shared dataset paths (GEBCO, TPXO, ...) are GLADE
-        # locations, so only ask for them when we are actually on GLADE;
-        # elsewhere the notebooks keep their <KEY> placeholders for the user
-        # to fill in. The three paths Bask itself owns are always injected,
-        # since the installer is the only thing that knows where they landed.
+        # CrocoGallery's "tutorial" machine is its GLADE dataset paths (GEBCO,
+        # TPXO, ...) plus the workshop batch settings: the tutorial queue, the
+        # workshop project code and the walltimes. Those only resolve on
+        # GLADE, so elsewhere the notebooks keep their <KEY> placeholders for
+        # the user to fill in. The three paths Bask itself owns are always
+        # injected, since the installer is the only thing that knows where
+        # they landed.
         TEMPLATE_ARGS=()
-        # if [[ -d /glade/campaign/cesm/cesmdata/inputdata ]]; then
-        #     TEMPLATE_ARGS+=(--machine glade)
-        # fi
+        GALLERY_MACHINE=""
+        if [[ -d /glade/campaign/cesm/cesmdata/inputdata ]]; then
+            GALLERY_MACHINE="tutorial"
+            TEMPLATE_ARGS+=(--machine "$GALLERY_MACHINE")
+        fi
         TEMPLATE_ARGS+=(--set "casedir=$CASES_PATH" --set "inputdir=$INPUT_PATH")
         if [[ -n "${CESM_PATH:-}" ]]; then
             TEMPLATE_ARGS+=(--set "CESM=$CESM_PATH")
@@ -173,6 +178,7 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 ]]; then
         echo "Rendering CrocoGallery notebooks into $NBS_PATH..."
         echo "  cases -> $CASES_PATH"
         echo "  input -> $INPUT_PATH"
+        echo "  gallery machine -> ${GALLERY_MACHINE:-none (placeholders left in)}"
         while IFS= read -r NB || [[ -n "$NB" ]]; do
             NB="${NB%%#*}"
             NB="${NB//[[:space:]]/}"
@@ -331,6 +337,7 @@ if [[ "$INSTALL_CROCODASH" -eq 1 ]]; then
     cat <<EOF | tee -a $INSTALL_RECORD
 CrocoDash:
     path:   $CROCODASH_PATH
+    version: $CROCODASH_VERSION
     commit: $CROCODASH_SHA
     conda environment: $CROCODASH_ENV_NAME
 
@@ -342,6 +349,7 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 && "${#RENDERED_NOTEBOOKS[@]}" -gt 0 ]]; then
         echo "    workspace: $NBS_PATH"
         echo "    case directory: $CASES_PATH"
         echo "    input directory: $INPUT_PATH"
+        echo "    gallery machine: ${GALLERY_MACHINE:-none}"
         for NB in "${RENDERED_NOTEBOOKS[@]}"; do
             echo "    - $NB"
         done

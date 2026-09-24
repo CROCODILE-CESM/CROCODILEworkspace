@@ -21,6 +21,11 @@ else
     CESM_DA_GITHUB="https://github.com/CROCODILE-CESM/CESM"
 fi
 
+# CrocoDash release the workspace installs. Export CROCODASH_REF to install a
+# different tag, branch or commit instead (e.g. CROCODASH_REF=main).
+# TODO: placeholder -- set to the real tag once CrocoDash is released.
+CROCODASH_REF="${CROCODASH_REF:-v0.2.0}"
+
 #### Existence check
 # Interrrupt install if any package is already at path
 
@@ -67,12 +72,15 @@ if [[ "$INSTALL_CROCODASH" -eq 1 ]]; then
     git clone "$CROCODASH_GITHUB" "$CROCODASH_PATH"
     cd "$CROCODASH_PATH"
     git fetch --tags
-    cd "$BASK_PATH"
-    cd "$CROCODASH_PATH"
+    echo "Checking out CrocoDash $CROCODASH_REF..."
+    if ! git -c advice.detachedHead=false checkout "$CROCODASH_REF"; then
+        echo "Error: CrocoDash has no tag, branch or commit named '$CROCODASH_REF'." >&2
+        echo "Export CROCODASH_REF to pick another one, e.g. CROCODASH_REF=main ./install.sh ..." >&2
+        exit 1
+    fi
+    # The release pins the gallery (and every other submodule), so the
+    # notebooks rendered below are the ones that release was tested with.
     git submodule update --init --recursive
-    cd "gallery"
-    git checkout main
-    git pull
     cd "$BASK_PATH"
     echo "CrocoDash downloaded."
 fi

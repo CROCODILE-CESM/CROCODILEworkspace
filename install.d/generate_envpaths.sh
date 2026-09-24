@@ -130,16 +130,10 @@ fi
 # Where the rendered gallery notebooks put their CESM cases and their MOM6
 # input files. These are not packages -- nothing is installed into them -- but
 # the notebooks need real directories, so they are resolved here alongside the
-# package paths and injected at render time. On GLADE they belong on scratch:
-# a single case's forcing runs to tens of GB, which does not belong in the
-# quota'd, backed-up work filesystem that holds the Bask tree.
-if [[ -d "/glade/derecho/scratch/$USER" ]]; then
-    CROC_DATA_ROOT="/glade/derecho/scratch/$USER"
-else
-    CROC_DATA_ROOT="$BASK_PATH"
-fi
-export CASES_PATH="$(realpath -m "${CASES_PATH:-$CROC_DATA_ROOT/croc_cases}")"
-export INPUT_PATH="$(realpath -m "${INPUT_PATH:-$CROC_DATA_ROOT/croc_input}")"
+# package paths and injected at render time. They sit in the workspace next to
+# the CESM checkout, so everything a workspace makes stays in one place.
+export CASES_PATH="$(realpath -m "${CASES_PATH:-$BASK_PATH/croc_cases}")"
+export INPUT_PATH="$(realpath -m "${INPUT_PATH:-$BASK_PATH/croc_input}")"
 
 # Root of the existing DART installation that model2obs is pointed at: DART is
 # not installed here, and is compiled separately for each machine.

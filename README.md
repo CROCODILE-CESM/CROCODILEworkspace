@@ -99,4 +99,10 @@ The installer creates a `workspace/` folder at the repository root. Some package
 
 With `--notebooks` (included in `--all` and `--workshop`), the installer also renders the CrocoGallery notebooks listed in `install.d/notebooks.txt` into `workspace/`. Edit that file to change which notebooks are rendered; list the available IDs with `crocogallery template --list-notebooks`.
 
-Rendering fills in the paths the installer knows about: the CESM checkout, plus a case directory and an input directory (`croc_cases/` and `croc_input/`, placed under `/glade/derecho/scratch/$USER` when installing on GLADE and under the CROCODILEworkspace root otherwise). Export `CASES_PATH` or `INPUT_PATH` before running the installer to put them somewhere else. Shared dataset paths (GEBCO, TPXO, ...) are filled in only when installing on GLADE; elsewhere the notebooks keep their `<KEY>` placeholders for you to edit by hand.
+Rendering fills in the paths the installer knows about: the CESM checkout, plus a case directory and an input directory (`croc_cases/` and `croc_input/`, both at the CROCODILEworkspace root next to `CESM/`). Export `CASES_PATH` or `INPUT_PATH` before running the installer to put them somewhere else. Shared dataset paths (GEBCO, TPXO, ...) are filled in only when installing on GLADE (see below); elsewhere the notebooks keep their `<KEY>` placeholders for you to edit by hand.
+
+On GLADE, the notebooks are rendered with CrocoGallery's `tutorial` machine: its GLADE dataset paths plus the workshop batch settings (the `tutorial` queue, the workshop project code and the job walltimes). To render with different settings, run `crocogallery template` yourself with `--machine glade` and `--set KEY=VALUE` overrides.
+
+### CrocoDash version
+
+The installer checks out a pinned CrocoDash release (set by `CROCODASH_REF` in `install.d/init.sh`), and that release pins the CrocoGallery notebooks rendered into `workspace/`. Export `CROCODASH_REF` to install a different tag, branch or commit, e.g. `CROCODASH_REF=main ./install.sh --crocodash`. The version installed is recorded in `install.d/installed_<timestamp>.txt`.
