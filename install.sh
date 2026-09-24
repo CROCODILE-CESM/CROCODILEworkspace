@@ -181,10 +181,17 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 ]]; then
         echo "  gallery machine -> ${GALLERY_MACHINE:-none (placeholders left in)}"
         while IFS= read -r LINE || [[ -n "$LINE" ]]; do
             LINE="${LINE%%#*}"
-            # "<notebook-id> [output-name]": the name defaults to the ID.
+            # "<notebook-id> [output-name]": the name defaults to the ID. It
+            # may include folders under workspace/ (created as needed), and a
+            # trailing "/" puts the notebook in that folder under its ID.
             read -r NB NAME _ <<< "$LINE"
             [[ -z "$NB" ]] && continue
             NAME="${NAME:-$NB}"
+            [[ "$NAME" == */ ]] && NAME="${NAME}${NB}"
+            if [[ "$NAME" == /* || "/$NAME/" == */../* ]]; then
+                echo "ERROR: notebooks.txt name '$NAME' for $NB must stay inside $NBS_PATH." >&2
+                exit 1
+            fi
             NAME="${NAME%.ipynb}.ipynb"
             OUTPUT="${NBS_PATH}${NAME}"
             echo "  - $NB -> $OUTPUT"

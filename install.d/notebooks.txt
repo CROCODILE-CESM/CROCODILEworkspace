@@ -2,6 +2,9 @@
 # --notebooks is passed to install.sh (and included by --all and --workshop).
 # One entry per line: <notebook-id> [output-name]. The output name is
 # optional (".ipynb" is added if missing) and defaults to the notebook ID.
+# It may include folders under workspace/, which are created as needed
+# (e.g. "crocodash/tutorial"); a trailing "/" keeps the ID as the filename
+# (e.g. "dart/" -> workspace/dart/<notebook-id>.ipynb).
 # Blank lines and lines starting with '#' are ignored.
 # List available IDs with: crocogallery template --list-notebooks
 crocodash.tutorial
