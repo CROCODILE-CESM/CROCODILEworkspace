@@ -179,17 +179,20 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 ]]; then
         echo "  cases -> $CASES_PATH"
         echo "  input -> $INPUT_PATH"
         echo "  gallery machine -> ${GALLERY_MACHINE:-none (placeholders left in)}"
-        while IFS= read -r NB || [[ -n "$NB" ]]; do
-            NB="${NB%%#*}"
-            NB="${NB//[[:space:]]/}"
+        while IFS= read -r LINE || [[ -n "$LINE" ]]; do
+            LINE="${LINE%%#*}"
+            # "<notebook-id> [output-name]": the name defaults to the ID.
+            read -r NB NAME _ <<< "$LINE"
             [[ -z "$NB" ]] && continue
-            OUTPUT="${NBS_PATH}${NB}.ipynb"
+            NAME="${NAME:-$NB}"
+            NAME="${NAME%.ipynb}.ipynb"
+            OUTPUT="${NBS_PATH}${NAME}"
             echo "  - $NB -> $OUTPUT"
             conda run -n "$CROCODASH_ENV_NAME" crocogallery template \
                 "${TEMPLATE_ARGS[@]}" \
                 --notebook "$NB" \
                 --output "$OUTPUT"
-            RENDERED_NOTEBOOKS+=("$NB")
+            RENDERED_NOTEBOOKS+=("$NB -> $NAME")
         done < "$NOTEBOOKS_LIST"
         echo "CrocoGallery notebooks rendered."
     fi
