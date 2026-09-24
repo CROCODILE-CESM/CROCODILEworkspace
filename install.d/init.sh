@@ -24,7 +24,7 @@ fi
 # CrocoDash release the workspace installs. Export CROCODASH_REF to install a
 # different tag, branch or commit instead (e.g. CROCODASH_REF=main).
 # TODO: placeholder -- set to the real tag once CrocoDash is released.
-CROCODASH_REF="${CROCODASH_REF:-v0.2.0}"
+CROCODASH_REF="${CROCODASH_REF:-v1.0.0}"
 
 #### Existence check
 # Interrrupt install if any package is already at path

@@ -10,6 +10,9 @@ DART/
 croc_cases/
 croc_input/
 
+# netCDF files
+*.nc
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
