@@ -12,11 +12,14 @@ Package Selection:
                     builds a CESM_DA conda env for the DART notebooks)
   --model2obs       Install model2obs diagnostics tools
   --crocodash       Install CrocoDash model components
+  --crocogallery    Install the CrocoGallery checkout the notebooks are rendered from
   --mom6-tools      Install mom6-tools diagnostics tools
   --cupid           Install CUPiD diagnostics framework
   --dart            Root of an existing DART installation (used by model2obs)
   --notebooks       Render CrocoGallery notebooks listed in install.d/notebooks.txt
-                    into <BASK_PATH>/workspace/ (implies --crocodash)
+                    into workspace/ in this CROCODILEworkspace folder (implies
+                    --crocogallery; needs the CrocoDash env, from this or an
+                    earlier install)
   --all             Install all packages (includes --notebooks)
   --workshop        Install all packages except CUPiD (includes --notebooks)
 
@@ -34,6 +37,7 @@ Examples:
   ./install.sh --all --paths
   ./install.sh --cesm -d -f
   ./install.sh --crocodash --notebooks
+  ./install.sh --notebooks -f      (re-render the notebooks from CrocoGallery main)
   ./install.sh --model2obs --dart /glade/work/me/DART
 
 Notes:
@@ -115,6 +119,17 @@ if [[ "$INSTALL_MODEL2OBS" -eq 1 ]]; then
     fi
 fi
 
+# --notebooks renders with the CrocoDash env's Python. When CrocoDash isn't
+# being installed in this run, reuse the env an earlier install built.
+if [[ "$INSTALL_NOTEBOOKS" -eq 1 && "$INSTALL_CROCODASH" -eq 0 ]]; then
+    CROCODASH_ENV_NAME="${ENV_PREFIX:+${ENV_PREFIX}-}CrocoDash"
+    if ! conda env list | awk '{print $1}' | grep -qx "$CROCODASH_ENV_NAME"; then
+        echo "Error: --notebooks needs the CrocoDash conda env '$CROCODASH_ENV_NAME'." >&2
+        echo "Install it too with: ./install.sh --crocodash --notebooks" >&2
+        exit 1
+    fi
+fi
+
 if [[ "$FORCE" -eq 1 ]]; then
     ./clean.sh
 fi
@@ -151,25 +166,26 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 ]]; then
     NOTEBOOKS_LIST="$INSTALL_DIR/notebooks.txt"
     if [[ ! -f "$NOTEBOOKS_LIST" ]]; then
         echo "WARNING: --notebooks passed but $NOTEBOOKS_LIST is missing; skipping."
-    elif [[ -z "${CROCODASH_ENV_NAME:-}" ]]; then
-        echo "WARNING: --notebooks requires the CrocoDash env; skipping notebook rendering."
     else
         mkdir -p "$CASES_PATH" "$INPUT_PATH"
 
-        # The gallery's shared dataset paths (GEBCO, TPXO, ...) are GLADE
-        # locations, so only ask for them when we are actually on GLADE;
-        # elsewhere the notebooks keep their <KEY> placeholders for the user
-        # to fill in. The three paths Bask itself owns are always injected,
-        # since the installer is the only thing that knows where they landed.
+        # CrocoGallery's "tutorial" machine is its GLADE dataset paths (GEBCO,
+        # TPXO, ...) plus the workshop batch settings: the tutorial queue, the
+        # workshop project code and the walltimes. Those only resolve on
+        # GLADE, so elsewhere the notebooks keep their <KEY> placeholders for
+        # the user to fill in. The three paths the installer itself owns are always
+        # injected, since the installer is the only thing that knows where
+        # they landed.
         TEMPLATE_ARGS=()
-        # if [[ -d /glade/campaign/cesm/cesmdata/inputdata ]]; then
-        #     TEMPLATE_ARGS+=(--machine glade)
-        # fi
+        if [[ -d /glade/campaign/cesm/cesmdata/inputdata ]]; then
+            TEMPLATE_ARGS+=(--machine tutorial)
+        fi
         TEMPLATE_ARGS+=(--set "casedir=$CASES_PATH" --set "inputdir=$INPUT_PATH")
         if [[ -n "${CESM_PATH:-}" ]]; then
             TEMPLATE_ARGS+=(--set "CESM=$CESM_PATH")
         fi
 
+        CROCOGALLERY_SHA=$(git -C "$CROCOGALLERY_PATH" rev-parse HEAD)
         echo "Rendering CrocoGallery notebooks into $NBS_PATH..."
         echo "  cases -> $CASES_PATH"
         echo "  input -> $INPUT_PATH"
@@ -179,7 +195,11 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 ]]; then
             [[ -z "$NB" ]] && continue
             OUTPUT="${NBS_PATH}${NB}.ipynb"
             echo "  - $NB -> $OUTPUT"
-            conda run -n "$CROCODASH_ENV_NAME" crocogallery template \
+            # Import crocogallery from the separate checkout rather than the
+            # copy installed in the CrocoDash env, so the notebooks come from
+            # CrocoGallery's own ref, not the gallery CrocoDash pins.
+            PYTHONPATH="$CROCOGALLERY_PATH" conda run -n "$CROCODASH_ENV_NAME" \
+                python -m crocogallery template \
                 "${TEMPLATE_ARGS[@]}" \
                 --notebook "$NB" \
                 --output "$OUTPUT"
@@ -339,6 +359,8 @@ fi
 if [[ "$INSTALL_NOTEBOOKS" -eq 1 && "${#RENDERED_NOTEBOOKS[@]}" -gt 0 ]]; then
     {
         echo "CrocoGallery notebooks:"
+        echo "    path:   $CROCOGALLERY_PATH"
+        echo "    commit: $CROCOGALLERY_SHA"
         echo "    workspace: $NBS_PATH"
         echo "    case directory: $CASES_PATH"
         echo "    input directory: $INPUT_PATH"

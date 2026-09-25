@@ -14,6 +14,7 @@ Package Selection:
   --cesm_da         Remove CESM_DA DART-enabled CESM checkout
   --model2obs       Remove model2obs diagnostics tools
   --crocodash       Remove CrocoDash model components
+  --crocogallery    Remove the CrocoGallery checkout used by --notebooks
   --mom6-tools      Remove mom6-tools diagnostics tools (alias: --mom6tools)
   --cupid           Remove CUPiD diagnostics framework
   --all             Remove all packages
@@ -36,7 +37,7 @@ EOF
 fi
 
 # If no arguments provided, use envpaths.sh (preserves original behavior when called from install.sh)
-PKGS=(CESM CESM_DA MODEL2OBS CROCODASH MOM6TOOLS CUPID)
+PKGS=(CESM CESM_DA MODEL2OBS CROCODASH CROCOGALLERY MOM6TOOLS CUPID)
 source ./envpaths.sh
 
 if [[ $# -eq 0 ]]; then
@@ -83,6 +84,14 @@ if [ "$CLEAN_CROCODASH" -eq 1 ] && [ -e "$CROCODASH_PATH" ]; then
     cd "$BASK_PATH"
     rm -rf "$CROCODASH_PATH"
     echo "CrocoDash removed."
+fi
+
+# CrocoGallery
+if [ "$CLEAN_CROCOGALLERY" -eq 1 ] && [ -n "$CROCOGALLERY_PATH" ]; then
+    echo "Removing CrocoGallery..."
+    cd "$BASK_PATH"
+    rm -rf "$CROCOGALLERY_PATH"
+    echo "CrocoGallery removed."
 fi
 
 # model2obs

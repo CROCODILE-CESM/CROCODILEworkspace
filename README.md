@@ -22,6 +22,7 @@ From the repository root, run:
 
 #### Package Selection
 - `--crocodash`: Install CrocoDash model components
+- `--crocogallery`: Install the CrocoGallery checkout the notebooks are rendered from
 - `--model2obs`: Install model2obs diagnostics tools
 - `--mom6-tools`: Install mom6-tools diagnostics tools
 - `--cupid`: Install CUPiD diagnostics framework
@@ -30,14 +31,14 @@ From the repository root, run:
 - `--dart`: Root path of an existing DART installation, used by model2obs (see [DART](#dart) below)
 - `--all`: Install all packages (includes `--notebooks`)
 - `--workshop`: Install all and only the packages used during the CROCODILE workshop (includes `--notebooks`)
-- `--notebooks`: Render the CrocoGallery notebooks listed in `install.d/notebooks.txt` into `workspace/` (implies `--crocodash`)
+- `--notebooks`: Render the CrocoGallery notebooks listed in `install.d/notebooks.txt` into `workspace/` (implies `--crocogallery`). Uses the CrocoDash conda env, so install `--crocodash` in the same run or an earlier one. To re-render the notebooks from the latest CrocoGallery, run `./install.sh --notebooks -f`: it re-clones CrocoGallery only, without touching CrocoDash or its env
 
 #### Installation Options
 - `-d, --default`: Use default paths for all packages (default behaviour, non-interactive)
 - `-p, --paths`: Prompt for each package path (interactive; mutually exclusive with `-d`)
 - `-f, --force`: Remove and reinstall selected packages if they already exist
 - `-s, --ssh-github`: Use SSH URLs instead of HTTPS for GitHub clones (requires SSH key setup)
-- `-e, --envname`: Specify prefix for conda environment names (default: no prefix, e.g. the CrocoDash environment is named `CrocoDash`; with `--envname bask` it becomes `bask-CrocoDash`)
+- `-e, --envname`: Specify prefix for conda environment names (default: no prefix, e.g. the CrocoDash environment is named `CrocoDash`; with `--envname croc` it becomes `croc-CrocoDash`)
 - `-h, --help`: Display usage information and exit
 
 You can combine multiple flags. Default paths are used unless you pass `-p`/`--paths`, which prompts for each package path and requires an interactive terminal.
@@ -68,7 +69,7 @@ The installer resolves the DART root in this order:
 ./install.sh --all
 
 # Install all packages with default paths and custom environment prefix
-./install.sh --all --envname myBask
+./install.sh --all --envname myCroc
 
 # Reinstall CESM (force reinstall if already exists)
 ./install.sh --cesm -f
@@ -86,6 +87,7 @@ The installer resolves the DART root in this order:
 ## Subpackages
 
 - **CrocoDash**: CESM-MOM6 regional cases set up management
+- **CrocoGallery**: CrocoDash tutorial and demo notebooks, rendered into `workspace/` by `--notebooks`
 - **model2obs**: Diagnostics and analysis tools for MOM6 (and soon ROMS) model output
 - **mom6-tools**: NCAR's diagnostics and analysis package for MOM6 model output
 - **CUPiD**: NCAR's unified framework for running analysis and diagnostics on climate model output
@@ -97,6 +99,25 @@ The installer resolves the DART root in this order:
 
 The installer creates a `workspace/` folder at the repository root. Some packages copy their tutorial notebooks and configurations there.
 
-With `--notebooks` (included in `--all` and `--workshop`), the installer also renders the CrocoGallery notebooks listed in `install.d/notebooks.txt` into `workspace/`. Edit that file to change which notebooks are rendered; list the available IDs with `crocogallery template --list-notebooks`.
+With `--notebooks` (included in `--all` and `--workshop`), the installer also renders the CrocoGallery notebooks listed in `install.d/notebooks.txt` into `workspace/`, one notebook ID per line, each saved as `workspace/<ID>.ipynb`. A notebook's ID is its path inside `CrocoGallery/`, with `/` replaced by `.` and without `.ipynb` (e.g. `crocodash/tutorial-ocn.ipynb` is `crocodash.tutorial-ocn`).
 
-Rendering fills in the paths the installer knows about: the CESM checkout, plus a case directory and an input directory (`croc_cases/` and `croc_input/`, placed under `/glade/derecho/scratch/$USER` when installing on GLADE and under the CROCODILEworkspace root otherwise). Export `CASES_PATH` or `INPUT_PATH` before running the installer to put them somewhere else. Shared dataset paths (GEBCO, TPXO, ...) are filled in only when installing on GLADE; elsewhere the notebooks keep their `<KEY>` placeholders for you to edit by hand.
+The notebooks are filled in with the case directory and input directory to use (`croc_cases/` and `croc_input/`, at the CROCODILEworkspace root next to `CESM/`). To put them somewhere else, export `CASES_PATH` or `INPUT_PATH` before running the installer.
+
+On GLADE, the notebooks are also filled in with the paths to the shared datasets (GEBCO, TPXO, ...) and with the workshop job settings (the `tutorial` queue, project `UCGD0009` and the walltimes).
+
+### Package versions
+
+By default, the installer checks out the versions in the table below, which were tested together. To install a different tag, branch or commit, export the matching variable, e.g. `CESM_REF=full_regional_cesm ./install.sh --cesm` to get the newest CESM on that branch.
+
+The commit of every package installed is recorded in `install.d/installed_<timestamp>.txt`.
+
+| Package | Variable | Default |
+|---|---|---|
+| CrocoDash | `CROCODASH_REF` | `main` |
+| CrocoGallery | `CROCOGALLERY_REF` | `main` (the notebooks rendered into `workspace/`) |
+| model2obs | `MODEL2OBS_REF` | commit `317af36` on `main` |
+| mom6-tools | `MOM6TOOLS_REF` | commit `8f07f2c` on `CROCODILE_workshop_2026` |
+| CESM | `CESM_REF` | commit `16dd396` on `full_regional_cesm` |
+| CESM_DA | `CESM_DA_REF` | commit `fa0f040` on `full_regional_cesm_dart` |
+| CUPiD | (fixed) | `v0.3.1` |
+
