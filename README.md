@@ -102,3 +102,48 @@ The installer creates a `workspace/` folder at the repository root. Some package
 With `--notebooks` (included in `--all` and `--workshop`), the installer also renders the CrocoGallery notebooks listed in `install.d/notebooks.txt` into `workspace/`. Edit that file to change which notebooks are rendered; list the available IDs with `crocogallery template --list-notebooks`.
 
 Rendering fills in the paths the installer knows about: the CESM checkout, plus a case directory and an input directory (`croc_cases/` and `croc_input/`, placed under `/glade/derecho/scratch/$USER` when installing on GLADE and under the CROCODILEworkspace root otherwise). Export `CASES_PATH` or `INPUT_PATH` before running the installer to put them somewhere else. Shared dataset paths (GEBCO, TPXO, ...) are filled in only when installing on GLADE; elsewhere the notebooks keep their `<KEY>` placeholders for you to edit by hand.
+
+## Updates
+
+### Notebooks
+
+### Packages
+
+To update an installed package, there are two options:
+
+1. Run a force install: `./install.sh --<packagename`, e.g. `./install.sh CESM`; **this will wipe out the current install and conda environment** and reinstall the package from scratch. If you force-reinstall but would like to check out a specific tag/branch/commit see [Package versions](#package-versions).
+
+2. You skip the wipe out and only update the most recent updates by going into the package rootpath and update it, e.g. for model2obs, mom6_tools, CrocoGallery:
+
+``` bash
+cd model2obs #or `cd mom6_tools`, `cd crocogallery`
+git checkout main
+git pull
+```
+
+Some packages require a few extra steps:
+
+``` bash
+cd CrocoDash
+git checkout main
+git pull
+git submodule update --init --recursive
+```
+
+``` bash
+cd CESM
+git checkout full_regional_cesm
+git pull
+./bin/git-fleximod update
+```
+
+``` bash
+cd CESM_DA
+git checkout full_regional_cesm_dart
+git pull
+./bin/git-fleximod update
+```
+
+If you need to check out a different branch/tag/commit, just run `git checkout <new-cool-branch>` in the checkout step.
+
+### Notebooks
