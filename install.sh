@@ -12,11 +12,13 @@ Package Selection:
                     builds a CESM_DA conda env for the DART notebooks)
   --model2obs       Install model2obs diagnostics tools
   --crocodash       Install CrocoDash model components
+  --crocogallery    Install the CrocoGallery checkout the notebooks are rendered from
   --mom6-tools      Install mom6-tools diagnostics tools
   --cupid           Install CUPiD diagnostics framework
   --dart            Root of an existing DART installation (used by model2obs)
   --notebooks       Render CrocoGallery notebooks listed in install.d/notebooks.txt
-                    into <BASK_PATH>/workspace/ (implies --crocodash)
+                    into <BASK_PATH>/workspace/ (implies --crocodash and
+                    --crocogallery)
   --all             Install all packages (includes --notebooks)
   --workshop        Install all packages except CUPiD (includes --notebooks)
 
@@ -172,6 +174,7 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 ]]; then
             TEMPLATE_ARGS+=(--set "CESM=$CESM_PATH")
         fi
 
+        CROCOGALLERY_SHA=$(git -C "$CROCOGALLERY_PATH" rev-parse HEAD)
         echo "Rendering CrocoGallery notebooks into $NBS_PATH..."
         echo "  cases -> $CASES_PATH"
         echo "  input -> $INPUT_PATH"
@@ -181,7 +184,11 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 ]]; then
             [[ -z "$NB" ]] && continue
             OUTPUT="${NBS_PATH}${NB}.ipynb"
             echo "  - $NB -> $OUTPUT"
-            conda run -n "$CROCODASH_ENV_NAME" crocogallery template \
+            # Import crocogallery from the separate checkout rather than the
+            # copy installed in the CrocoDash env, so the notebooks come from
+            # CrocoGallery's own ref, not the gallery CrocoDash pins.
+            PYTHONPATH="$CROCOGALLERY_PATH" conda run -n "$CROCODASH_ENV_NAME" \
+                python -m crocogallery template \
                 "${TEMPLATE_ARGS[@]}" \
                 --notebook "$NB" \
                 --output "$OUTPUT"
@@ -341,6 +348,8 @@ fi
 if [[ "$INSTALL_NOTEBOOKS" -eq 1 && "${#RENDERED_NOTEBOOKS[@]}" -gt 0 ]]; then
     {
         echo "CrocoGallery notebooks:"
+        echo "    path:   $CROCOGALLERY_PATH"
+        echo "    commit: $CROCOGALLERY_SHA"
         echo "    workspace: $NBS_PATH"
         echo "    case directory: $CASES_PATH"
         echo "    input directory: $INPUT_PATH"

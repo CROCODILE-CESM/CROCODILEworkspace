@@ -3,6 +3,7 @@ install.d/envpaths.sh
 CESM/
 CESM_DA/
 CrocoDash/
+CrocoGallery/
 model2obs/
 mom6-tools/
 CUPiD/

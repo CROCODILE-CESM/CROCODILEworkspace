@@ -22,6 +22,7 @@ From the repository root, run:
 
 #### Package Selection
 - `--crocodash`: Install CrocoDash model components
+- `--crocogallery`: Install the CrocoGallery checkout the notebooks are rendered from
 - `--model2obs`: Install model2obs diagnostics tools
 - `--mom6-tools`: Install mom6-tools diagnostics tools
 - `--cupid`: Install CUPiD diagnostics framework
@@ -30,7 +31,7 @@ From the repository root, run:
 - `--dart`: Root path of an existing DART installation, used by model2obs (see [DART](#dart) below)
 - `--all`: Install all packages (includes `--notebooks`)
 - `--workshop`: Install all and only the packages used during the CROCODILE workshop (includes `--notebooks`)
-- `--notebooks`: Render the CrocoGallery notebooks listed in `install.d/notebooks.txt` into `workspace/` (implies `--crocodash`)
+- `--notebooks`: Render the CrocoGallery notebooks listed in `install.d/notebooks.txt` into `workspace/` (implies `--crocodash` and `--crocogallery`)
 
 #### Installation Options
 - `-d, --default`: Use default paths for all packages (default behaviour, non-interactive)
@@ -86,6 +87,7 @@ The installer resolves the DART root in this order:
 ## Subpackages
 
 - **CrocoDash**: CESM-MOM6 regional cases set up management
+- **CrocoGallery**: CrocoDash tutorial and demo notebooks, rendered into `workspace/` by `--notebooks`
 - **model2obs**: Diagnostics and analysis tools for MOM6 (and soon ROMS) model output
 - **mom6-tools**: NCAR's diagnostics and analysis package for MOM6 model output
 - **CUPiD**: NCAR's unified framework for running analysis and diagnostics on climate model output
@@ -97,7 +99,7 @@ The installer resolves the DART root in this order:
 
 The installer creates a `workspace/` folder at the repository root. Some packages copy their tutorial notebooks and configurations there.
 
-With `--notebooks` (included in `--all` and `--workshop`), the installer also renders the CrocoGallery notebooks listed in `install.d/notebooks.txt` into `workspace/`, one notebook ID per line, each saved as `workspace/<ID>.ipynb`. List the available notebook IDs with `crocogallery template --list-notebooks`.
+With `--notebooks` (included in `--all` and `--workshop`), the installer also renders the CrocoGallery notebooks listed in `install.d/notebooks.txt` into `workspace/`, one notebook ID per line, each saved as `workspace/<ID>.ipynb`. A notebook's ID is its path inside `CrocoGallery/`, with `/` replaced by `.` and without `.ipynb` (e.g. `crocodash/tutorial-ocn.ipynb` is `crocodash.tutorial-ocn`).
 
 The notebooks are filled in with the case directory and input directory to use (`croc_cases/` and `croc_input/`, at the CROCODILEworkspace root next to `CESM/`). To put them somewhere else, export `CASES_PATH` or `INPUT_PATH` before running the installer.
 
@@ -105,15 +107,14 @@ On GLADE, the notebooks are also filled in with the paths to the shared datasets
 
 ### Package versions
 
-The installer checks out the latest compatible version of every package.
-
-Export any of the variables below to install a different tag, branch or commit, e.g. `CESM_REF=full_regional_cesm ./install.sh --cesm` to get the newest CESM on that branch.
+By default, the installer checks out the versions in the table below, which were tested together. To install a different tag, branch or commit, export the matching variable, e.g. `CESM_REF=full_regional_cesm ./install.sh --cesm` to get the newest CESM on that branch.
 
 The commit of every package installed is recorded in `install.d/installed_<timestamp>.txt`.
 
 | Package | Variable | Default |
 |---|---|---|
-| CrocoDash | `CROCODASH_REF` | `main` (this also sets the version of the CrocoGallery notebooks rendered into `workspace/`) |
+| CrocoDash | `CROCODASH_REF` | `main` |
+| CrocoGallery | `CROCOGALLERY_REF` | `main` (the notebooks rendered into `workspace/`) |
 | model2obs | `MODEL2OBS_REF` | commit `317af36` on `main` |
 | mom6-tools | `MOM6TOOLS_REF` | commit `8f07f2c` on `CROCODILE_workshop_2026` |
 | CESM | `CESM_REF` | commit `16dd396` on `full_regional_cesm` |

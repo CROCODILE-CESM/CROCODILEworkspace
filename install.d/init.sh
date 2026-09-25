@@ -7,6 +7,7 @@ source ./envpaths.sh
 # Set GitHub URLs based on SSH_GITHUB flag
 if [[ "$SSH_GITHUB" -eq 1 ]]; then
     CROCODASH_GITHUB="git@github.com:CROCODILE-CESM/CrocoDash.git"
+    CROCOGALLERY_GITHUB="git@github.com:CROCODILE-CESM/CrocoGallery.git"
     MODEL2OBS_GITHUB="git@github.com:CROCODILE-CESM/model2obs.git"
     MOM6TOOLS_GITHUB="git@github.com:NCAR/mom6-tools.git"
     CUPID_GITHUB="git@github.com:NCAR/CUPiD.git"
@@ -14,6 +15,7 @@ if [[ "$SSH_GITHUB" -eq 1 ]]; then
     CESM_DA_GITHUB="git@github.com:CROCODILE-CESM/CESM"
 else
     CROCODASH_GITHUB="https://github.com/CROCODILE-CESM/CrocoDash.git"
+    CROCOGALLERY_GITHUB="https://github.com/CROCODILE-CESM/CrocoGallery.git"
     MODEL2OBS_GITHUB="https://github.com/CROCODILE-CESM/model2obs.git"
     MOM6TOOLS_GITHUB="https://github.com/NCAR/mom6-tools.git"
     CUPID_GITHUB="https://github.com/NCAR/CUPiD.git"
@@ -24,8 +26,10 @@ fi
 # Versions the workspace installs, frozen for the 2026 workshop so every
 # participant gets the same code (CROCODILEworkspace#15). Export any of these
 # to install a different tag, branch or commit instead (e.g. CESM_REF=main).
-# CrocoDash tracks main until it has a release to pin.
+# CrocoDash tracks main until it has a release to pin, and the notebooks are
+# rendered from CrocoGallery main, independent of the gallery CrocoDash pins.
 CROCODASH_REF="${CROCODASH_REF:-main}"
+CROCOGALLERY_REF="${CROCOGALLERY_REF:-main}"
 # Commits on model2obs main, mom6-tools CROCODILE_workshop_2026, and the CESM
 # full_regional_cesm / full_regional_cesm_dart branches.
 MODEL2OBS_REF="${MODEL2OBS_REF:-317af3633689e8ae01b2f5e28faaa92d4e16f1b6}"
@@ -56,6 +60,9 @@ check_existing() {
 
 if [[ "$INSTALL_CROCODASH" -eq 1 ]]; then
     check_existing "CrocoDash" "$CROCODASH_PATH"
+fi
+if [[ "$INSTALL_CROCOGALLERY" -eq 1 ]]; then
+    check_existing "CrocoGallery" "$CROCOGALLERY_PATH"
 fi
 if [[ "$INSTALL_MODEL2OBS" -eq 1 ]]; then
     check_existing "model2obs" "$MODEL2OBS_PATH"
@@ -90,11 +97,20 @@ if [[ "$INSTALL_CROCODASH" -eq 1 ]]; then
     cd "$CROCODASH_PATH"
     git fetch --tags
     checkout_ref CrocoDash "$CROCODASH_REF" CROCODASH_REF
-    # CrocoDash pins the gallery (and every other submodule), so the
-    # notebooks rendered below are the ones that CrocoDash was tested with.
     git submodule update --init --recursive
     cd "$BASK_PATH"
     echo "CrocoDash downloaded."
+fi
+
+#### CrocoGallery
+
+if [[ "$INSTALL_CROCOGALLERY" -eq 1 ]]; then
+    echo "Downloading CrocoGallery..."
+    git clone "$CROCOGALLERY_GITHUB" "$CROCOGALLERY_PATH"
+    cd "$CROCOGALLERY_PATH"
+    checkout_ref CrocoGallery "$CROCOGALLERY_REF" CROCOGALLERY_REF
+    cd "$BASK_PATH"
+    echo "CrocoGallery downloaded."
 fi
 
 #### model2obs
