@@ -107,6 +107,8 @@ Rendering fills in the paths the installer knows about: the CESM checkout, plus 
 
 ### Notebooks
 
+To update the notebooks, run `./install.sh --notebooks`.
+
 ### Packages
 
 To update an installed package, there are two options:
@@ -145,5 +147,3 @@ git pull
 ```
 
 If you need to check out a different branch/tag/commit, just run `git checkout <new-cool-branch>` in the checkout step.
-
-### Notebooks
