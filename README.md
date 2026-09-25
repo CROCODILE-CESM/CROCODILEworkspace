@@ -38,7 +38,7 @@ From the repository root, run:
 - `-p, --paths`: Prompt for each package path (interactive; mutually exclusive with `-d`)
 - `-f, --force`: Remove and reinstall selected packages if they already exist
 - `-s, --ssh-github`: Use SSH URLs instead of HTTPS for GitHub clones (requires SSH key setup)
-- `-e, --envname`: Specify prefix for conda environment names (default: no prefix, e.g. the CrocoDash environment is named `CrocoDash`; with `--envname bask` it becomes `bask-CrocoDash`)
+- `-e, --envname`: Specify prefix for conda environment names (default: no prefix, e.g. the CrocoDash environment is named `CrocoDash`; with `--envname croc` it becomes `croc-CrocoDash`)
 - `-h, --help`: Display usage information and exit
 
 You can combine multiple flags. Default paths are used unless you pass `-p`/`--paths`, which prompts for each package path and requires an interactive terminal.
@@ -69,7 +69,7 @@ The installer resolves the DART root in this order:
 ./install.sh --all
 
 # Install all packages with default paths and custom environment prefix
-./install.sh --all --envname myBask
+./install.sh --all --envname myCroc
 
 # Reinstall CESM (force reinstall if already exists)
 ./install.sh --cesm -f

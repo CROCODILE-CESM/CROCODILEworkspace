@@ -17,8 +17,9 @@ Package Selection:
   --cupid           Install CUPiD diagnostics framework
   --dart            Root of an existing DART installation (used by model2obs)
   --notebooks       Render CrocoGallery notebooks listed in install.d/notebooks.txt
-                    into <BASK_PATH>/workspace/ (implies --crocogallery; needs
-                    the CrocoDash env, from this or an earlier install)
+                    into workspace/ in this CROCODILEworkspace folder (implies
+                    --crocogallery; needs the CrocoDash env, from this or an
+                    earlier install)
   --all             Install all packages (includes --notebooks)
   --workshop        Install all packages except CUPiD (includes --notebooks)
 
@@ -172,7 +173,7 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 ]]; then
         # TPXO, ...) plus the workshop batch settings: the tutorial queue, the
         # workshop project code and the walltimes. Those only resolve on
         # GLADE, so elsewhere the notebooks keep their <KEY> placeholders for
-        # the user to fill in. The three paths Bask itself owns are always
+        # the user to fill in. The three paths the installer itself owns are always
         # injected, since the installer is the only thing that knows where
         # they landed.
         TEMPLATE_ARGS=()
