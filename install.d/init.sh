@@ -23,9 +23,9 @@ fi
 
 # Versions the workspace installs, frozen for the 2026 workshop so every
 # participant gets the same code (CROCODILEworkspace#15). Export any of these
-# to install a different tag, branch or commit instead (e.g. CROCODASH_REF=main).
-# TODO: placeholder -- set to the real tag once CrocoDash is released.
-CROCODASH_REF="${CROCODASH_REF:-v1.0.0}"
+# to install a different tag, branch or commit instead (e.g. CESM_REF=main).
+# CrocoDash tracks main until it has a release to pin.
+CROCODASH_REF="${CROCODASH_REF:-main}"
 # Commits on model2obs main, mom6-tools CROCODILE_workshop_2026, and the CESM
 # full_regional_cesm / full_regional_cesm_dart branches.
 MODEL2OBS_REF="${MODEL2OBS_REF:-317af3633689e8ae01b2f5e28faaa92d4e16f1b6}"
@@ -90,8 +90,8 @@ if [[ "$INSTALL_CROCODASH" -eq 1 ]]; then
     cd "$CROCODASH_PATH"
     git fetch --tags
     checkout_ref CrocoDash "$CROCODASH_REF" CROCODASH_REF
-    # The release pins the gallery (and every other submodule), so the
-    # notebooks rendered below are the ones that release was tested with.
+    # CrocoDash pins the gallery (and every other submodule), so the
+    # notebooks rendered below are the ones that CrocoDash was tested with.
     git submodule update --init --recursive
     cd "$BASK_PATH"
     echo "CrocoDash downloaded."

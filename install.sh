@@ -137,7 +137,6 @@ if [[ "$INSTALL_CROCODASH" -eq 1 ]]; then
     echo "Installing CrocoDash environment..."
     cd "$CROCODASH_PATH"
     CROCODASH_SHA=$(git rev-parse HEAD)
-    CROCODASH_VERSION=$(git describe --tags --always)
     cd "$INSTALL_DIR"
     ENV_NAME=$(awk -F ": " '/^name:/ {print $2}' "$CROCODASH_PATH/environment.yml")
     CROCODASH_ENV_NAME="${ENV_PREFIX}${ENV_NAME}"
@@ -165,10 +164,8 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 ]]; then
         # injected, since the installer is the only thing that knows where
         # they landed.
         TEMPLATE_ARGS=()
-        GALLERY_MACHINE=""
         if [[ -d /glade/campaign/cesm/cesmdata/inputdata ]]; then
-            GALLERY_MACHINE="tutorial"
-            TEMPLATE_ARGS+=(--machine "$GALLERY_MACHINE")
+            TEMPLATE_ARGS+=(--machine tutorial)
         fi
         TEMPLATE_ARGS+=(--set "casedir=$CASES_PATH" --set "inputdir=$INPUT_PATH")
         if [[ -n "${CESM_PATH:-}" ]]; then
@@ -178,28 +175,17 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 ]]; then
         echo "Rendering CrocoGallery notebooks into $NBS_PATH..."
         echo "  cases -> $CASES_PATH"
         echo "  input -> $INPUT_PATH"
-        echo "  gallery machine -> ${GALLERY_MACHINE:-none (placeholders left in)}"
-        while IFS= read -r LINE || [[ -n "$LINE" ]]; do
-            LINE="${LINE%%#*}"
-            # "<notebook-id> [output-name]": the name defaults to the ID. It
-            # may include folders under workspace/ (created as needed), and a
-            # trailing "/" puts the notebook in that folder under its ID.
-            read -r NB NAME _ <<< "$LINE"
+        while IFS= read -r NB || [[ -n "$NB" ]]; do
+            NB="${NB%%#*}"
+            NB="${NB//[[:space:]]/}"
             [[ -z "$NB" ]] && continue
-            NAME="${NAME:-$NB}"
-            [[ "$NAME" == */ ]] && NAME="${NAME}${NB}"
-            if [[ "$NAME" == /* || "/$NAME/" == */../* ]]; then
-                echo "ERROR: notebooks.txt name '$NAME' for $NB must stay inside $NBS_PATH." >&2
-                exit 1
-            fi
-            NAME="${NAME%.ipynb}.ipynb"
-            OUTPUT="${NBS_PATH}${NAME}"
+            OUTPUT="${NBS_PATH}${NB}.ipynb"
             echo "  - $NB -> $OUTPUT"
             conda run -n "$CROCODASH_ENV_NAME" crocogallery template \
                 "${TEMPLATE_ARGS[@]}" \
                 --notebook "$NB" \
                 --output "$OUTPUT"
-            RENDERED_NOTEBOOKS+=("$NB -> $NAME")
+            RENDERED_NOTEBOOKS+=("$NB")
         done < "$NOTEBOOKS_LIST"
         echo "CrocoGallery notebooks rendered."
     fi
@@ -347,7 +333,6 @@ if [[ "$INSTALL_CROCODASH" -eq 1 ]]; then
     cat <<EOF | tee -a $INSTALL_RECORD
 CrocoDash:
     path:   $CROCODASH_PATH
-    version: $CROCODASH_VERSION
     commit: $CROCODASH_SHA
     conda environment: $CROCODASH_ENV_NAME
 
@@ -359,7 +344,6 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 && "${#RENDERED_NOTEBOOKS[@]}" -gt 0 ]]; then
         echo "    workspace: $NBS_PATH"
         echo "    case directory: $CASES_PATH"
         echo "    input directory: $INPUT_PATH"
-        echo "    gallery machine: ${GALLERY_MACHINE:-none}"
         for NB in "${RENDERED_NOTEBOOKS[@]}"; do
             echo "    - $NB"
         done

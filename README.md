@@ -97,23 +97,26 @@ The installer resolves the DART root in this order:
 
 The installer creates a `workspace/` folder at the repository root. Some packages copy their tutorial notebooks and configurations there.
 
-With `--notebooks` (included in `--all` and `--workshop`), the installer also renders the CrocoGallery notebooks listed in `install.d/notebooks.txt` into `workspace/`. Edit that file to change which notebooks are rendered; list the available IDs with `crocogallery template --list-notebooks`. Each line is a notebook ID, optionally followed by the name to save it under (e.g. `crocodash.tutorial my_tutorial`); without a name, the notebook is saved as `<ID>.ipynb`. The name may include folders inside `workspace/`, which are created as needed (e.g. `crocodash/tutorial`), and a trailing `/` keeps the ID as the filename (e.g. `dart/`).
+With `--notebooks` (included in `--all` and `--workshop`), the installer also renders the CrocoGallery notebooks listed in `install.d/notebooks.txt` into `workspace/`, one notebook ID per line, each saved as `workspace/<ID>.ipynb`. List the available notebook IDs with `crocogallery template --list-notebooks`.
 
-Rendering fills in the paths the installer knows about: the CESM checkout, plus a case directory and an input directory (`croc_cases/` and `croc_input/`, both at the CROCODILEworkspace root next to `CESM/`). Export `CASES_PATH` or `INPUT_PATH` before running the installer to put them somewhere else. Shared dataset paths (GEBCO, TPXO, ...) are filled in only when installing on GLADE (see below); elsewhere the notebooks keep their `<KEY>` placeholders for you to edit by hand.
+The notebooks are filled in with the case directory and input directory to use (`croc_cases/` and `croc_input/`, at the CROCODILEworkspace root next to `CESM/`). To put them somewhere else, export `CASES_PATH` or `INPUT_PATH` before running the installer.
 
-On GLADE, the notebooks are rendered with CrocoGallery's `tutorial` machine: its GLADE dataset paths plus the workshop batch settings (the `tutorial` queue, the workshop project code and the job walltimes). To render with different settings, run `crocogallery template` yourself with `--machine glade` and `--set KEY=VALUE` overrides.
+On GLADE, the notebooks are also filled in with the paths to the shared datasets (GEBCO, TPXO, ...) and with the workshop job settings (the `tutorial` queue, project `UCGD0009` and the walltimes). On other machines, these values are left as `<KEY>` placeholders for you to fill in by hand.
 
-### Pinned versions
+### Package versions
 
-The installer checks out a pinned version of every package, set in `install.d/init.sh`, so every install gets the same code:
+The installer checks out the latest compatible version of every package.
 
-| Package | Variable | Pinned to |
+Export any of the variables below to install a different tag, branch or commit, e.g. `CROCODASH_REF=main ./install.sh --crocodash`.
+
+The commit of every package installed is recorded in `install.d/installed_<timestamp>.txt`.
+
+| Package | Variable | Default |
 |---|---|---|
-| CrocoDash | `CROCODASH_REF` | a CrocoDash release, which also pins the CrocoGallery notebooks rendered into `workspace/` |
-| model2obs | `MODEL2OBS_REF` | a commit on `main` |
-| mom6-tools | `MOM6TOOLS_REF` | a commit on `CROCODILE_workshop_2026` |
-| CESM | `CESM_REF` | a commit on `full_regional_cesm` |
-| CESM_DA | `CESM_DA_REF` | a commit on `full_regional_cesm_dart` |
+| CrocoDash | `CROCODASH_REF` | `main` (this also sets the version of the CrocoGallery notebooks rendered into `workspace/`) |
+| model2obs | `MODEL2OBS_REF` | `main` |
+| mom6-tools | `MOM6TOOLS_REF` | `CROCODILE_workshop_2026` |
+| CESM | `CESM_REF` | `full_regional_cesm` |
+| CESM_DA | `CESM_DA_REF` | `full_regional_cesm_dart` |
 | CUPiD | (fixed) | `v0.3.1` |
 
-Export any of these variables to install a different tag, branch or commit, e.g. `CROCODASH_REF=main ./install.sh --crocodash`. The commit of every package installed is recorded in `install.d/installed_<timestamp>.txt`.
