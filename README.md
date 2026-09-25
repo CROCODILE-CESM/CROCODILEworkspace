@@ -36,6 +36,7 @@ From the repository root, run:
 - `-d, --default`: Use default paths for all packages (default behaviour, non-interactive)
 - `-p, --paths`: Prompt for each package path (interactive; mutually exclusive with `-d`)
 - `-f, --force`: Remove and reinstall selected packages, and overwrite their conda environments, if they already exist
+- `--envs-only`: Only build the conda environments of the selected packages, without touching their checkouts or the notebooks in `workspace/`; combine with `-f` to remove and rebuild environments that already exist
 - `-s, --ssh-github`: Use SSH URLs instead of HTTPS for GitHub clones (requires SSH key setup)
 - `-e, --envname`: Specify prefix for conda environment names (default: no prefix, e.g. the CrocoDash environment is named `CrocoDash`; with `--envname bask` it becomes `bask-CrocoDash`)
 - `-h, --help`: Display usage information and exit
@@ -45,6 +46,8 @@ You can combine multiple flags. Default paths are used unless you pass `-p`/`--p
 If a package already exists at the target path, the script stops with an error before installing anything. Use the `-f` or `--force` flag to remove and reinstall existing packages.
 
 Likewise, the script stops with an error also if any of the conda environments the selected packages need already exists. Use `-f`/`--force` to overwrite the existing environments, or `-e`/`--envname` to pick a different prefix.
+
+To build only the conda environments of packages you have already downloaded, use `--envs-only`: the environments are built from the existing checkouts, and nothing is re-cloned, cleaned, or re-rendered. As in a normal install, it stops if any of the environments already exists; add `-f` to remove and rebuild them (the checkouts are still left untouched), or use `-e`/`--envname` to build them under a different prefix. With `--cesm_da` it rebuilds the `CESM_DA` environment (from the CrocoDash checkout) even without `--notebooks`; CESM has no environment. model2obs's tutorial data is not copied again.
 
 ### DART
 
@@ -74,6 +77,9 @@ The installer resolves the DART root in this order:
 
 # Reinstall CESM (force reinstall if already exists)
 ./install.sh --cesm -f
+
+# Rebuild only the CrocoDash and mom6-tools conda environments
+./install.sh --crocodash --mom6-tools --envs-only -f
 
 # Install using SSH URLs (requires GitHub SSH key)
 ./install.sh --crocodash --cupid -s
