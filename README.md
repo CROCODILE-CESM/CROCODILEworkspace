@@ -31,7 +31,7 @@ From the repository root, run:
 - `--dart`: Root path of an existing DART installation, used by model2obs (see [DART](#dart) below)
 - `--all`: Install all packages (includes `--notebooks`)
 - `--workshop`: Install all and only the packages used during the CROCODILE workshop (includes `--notebooks`)
-- `--notebooks`: Render the CrocoGallery notebooks listed in `install.d/notebooks.txt` into `workspace/` (implies `--crocodash` and `--crocogallery`)
+- `--notebooks`: Render the CrocoGallery notebooks listed in `install.d/notebooks.txt` into `workspace/` (implies `--crocogallery`). Uses the CrocoDash conda env, so install `--crocodash` in the same run or an earlier one. To re-render the notebooks from the latest CrocoGallery, run `./install.sh --notebooks -f`: it re-clones CrocoGallery only, without touching CrocoDash or its env
 
 #### Installation Options
 - `-d, --default`: Use default paths for all packages (default behaviour, non-interactive)

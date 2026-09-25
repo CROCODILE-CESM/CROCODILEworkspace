@@ -101,13 +101,15 @@ if [[ "$PATHS_FLAG" -eq 1 ]]; then
     DEFAULT=0
 fi
 
-# --notebooks renders from its own CrocoGallery checkout, using the CrocoDash
-# env's Python (for the crocogallery CLI); CESM_DA's own conda env (built from
-# CrocoDash's environment.yml) is only needed to run the DART notebooks --
-# pull both in.
+# --notebooks renders from its own CrocoGallery checkout, using an existing
+# CrocoDash env's Python, so re-rendering only re-clones the gallery. CESM_DA's
+# notebook env is built from CrocoDash's environment.yml, so that combination
+# still needs the CrocoDash checkout.
 if [[ "$NOTEBOOKS" -eq 1 ]]; then
-    CROCODASH=1
     CROCOGALLERY=1
+    if [[ "$CESM_DA" -eq 1 ]]; then
+        CROCODASH=1
+    fi
 fi
 
 # Assign paths

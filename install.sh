@@ -17,8 +17,8 @@ Package Selection:
   --cupid           Install CUPiD diagnostics framework
   --dart            Root of an existing DART installation (used by model2obs)
   --notebooks       Render CrocoGallery notebooks listed in install.d/notebooks.txt
-                    into <BASK_PATH>/workspace/ (implies --crocodash and
-                    --crocogallery)
+                    into <BASK_PATH>/workspace/ (implies --crocogallery; needs
+                    the CrocoDash env, from this or an earlier install)
   --all             Install all packages (includes --notebooks)
   --workshop        Install all packages except CUPiD (includes --notebooks)
 
@@ -36,6 +36,7 @@ Examples:
   ./install.sh --all --paths
   ./install.sh --cesm -d -f
   ./install.sh --crocodash --notebooks
+  ./install.sh --notebooks -f      (re-render the notebooks from CrocoGallery main)
   ./install.sh --model2obs --dart /glade/work/me/DART
 
 Notes:
@@ -117,6 +118,17 @@ if [[ "$INSTALL_MODEL2OBS" -eq 1 ]]; then
     fi
 fi
 
+# --notebooks renders with the CrocoDash env's Python. When CrocoDash isn't
+# being installed in this run, reuse the env an earlier install built.
+if [[ "$INSTALL_NOTEBOOKS" -eq 1 && "$INSTALL_CROCODASH" -eq 0 ]]; then
+    CROCODASH_ENV_NAME="${ENV_PREFIX:+${ENV_PREFIX}-}CrocoDash"
+    if ! conda env list | awk '{print $1}' | grep -qx "$CROCODASH_ENV_NAME"; then
+        echo "Error: --notebooks needs the CrocoDash conda env '$CROCODASH_ENV_NAME'." >&2
+        echo "Install it too with: ./install.sh --crocodash --notebooks" >&2
+        exit 1
+    fi
+fi
+
 if [[ "$FORCE" -eq 1 ]]; then
     ./clean.sh
 fi
@@ -153,8 +165,6 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 ]]; then
     NOTEBOOKS_LIST="$INSTALL_DIR/notebooks.txt"
     if [[ ! -f "$NOTEBOOKS_LIST" ]]; then
         echo "WARNING: --notebooks passed but $NOTEBOOKS_LIST is missing; skipping."
-    elif [[ -z "${CROCODASH_ENV_NAME:-}" ]]; then
-        echo "WARNING: --notebooks requires the CrocoDash env; skipping notebook rendering."
     else
         mkdir -p "$CASES_PATH" "$INPUT_PATH"
 
