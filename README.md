@@ -101,22 +101,22 @@ With `--notebooks` (included in `--all` and `--workshop`), the installer also re
 
 The notebooks are filled in with the case directory and input directory to use (`croc_cases/` and `croc_input/`, at the CROCODILEworkspace root next to `CESM/`). To put them somewhere else, export `CASES_PATH` or `INPUT_PATH` before running the installer.
 
-On GLADE, the notebooks are also filled in with the paths to the shared datasets (GEBCO, TPXO, ...) and with the workshop job settings (the `tutorial` queue, project `UCGD0009` and the walltimes). On other machines, these values are left as `<KEY>` placeholders for you to fill in by hand.
+On GLADE, the notebooks are also filled in with the paths to the shared datasets (GEBCO, TPXO, ...) and with the workshop job settings (the `tutorial` queue, project `UCGD0009` and the walltimes).
 
 ### Package versions
 
 The installer checks out the latest compatible version of every package.
 
-Export any of the variables below to install a different tag, branch or commit, e.g. `CROCODASH_REF=main ./install.sh --crocodash`.
+Export any of the variables below to install a different tag, branch or commit, e.g. `CESM_REF=full_regional_cesm ./install.sh --cesm` to get the newest CESM on that branch.
 
 The commit of every package installed is recorded in `install.d/installed_<timestamp>.txt`.
 
 | Package | Variable | Default |
 |---|---|---|
 | CrocoDash | `CROCODASH_REF` | `main` (this also sets the version of the CrocoGallery notebooks rendered into `workspace/`) |
-| model2obs | `MODEL2OBS_REF` | `main` |
-| mom6-tools | `MOM6TOOLS_REF` | `CROCODILE_workshop_2026` |
-| CESM | `CESM_REF` | `full_regional_cesm` |
-| CESM_DA | `CESM_DA_REF` | `full_regional_cesm_dart` |
+| model2obs | `MODEL2OBS_REF` | commit `317af36` on `main` |
+| mom6-tools | `MOM6TOOLS_REF` | commit `8f07f2c` on `CROCODILE_workshop_2026` |
+| CESM | `CESM_REF` | commit `16dd396` on `full_regional_cesm` |
+| CESM_DA | `CESM_DA_REF` | commit `fa0f040` on `full_regional_cesm_dart` |
 | CUPiD | (fixed) | `v0.3.1` |
 
