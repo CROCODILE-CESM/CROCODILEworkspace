@@ -107,7 +107,7 @@ On GLADE, the notebooks are also filled in with the paths to the shared datasets
 
 ### Package versions
 
-By default, the installer checks out the versions in the table below, which were tested together. To install a different tag, branch or commit, export the matching variable, e.g. `CESM_REF=full_regional_cesm ./install.sh --cesm` to get the newest CESM on that branch.
+By default, the installer checks out the versions in the table below, which were tested together. To install a different tag, branch or commit, export the matching variable, e.g. `CESM_REF=workshop_2026 ./install.sh --cesm` to get the CESM frozen for the 2026 workshop.
 
 The commit of every package installed is recorded in `install.d/installed_<timestamp>.txt`.
 
@@ -117,7 +117,7 @@ The commit of every package installed is recorded in `install.d/installed_<times
 | CrocoGallery | `CROCOGALLERY_REF` | `main` (the notebooks rendered into `workspace/`) |
 | model2obs | `MODEL2OBS_REF` | commit `317af36` on `main` |
 | mom6-tools | `MOM6TOOLS_REF` | commit `8f07f2c` on `CROCODILE_workshop_2026` |
-| CESM | `CESM_REF` | commit `16dd396` on `full_regional_cesm` |
+| CESM | `CESM_REF` | branch `full_regional_cesm` |
 | CESM_DA | `CESM_DA_REF` | commit `fa0f040` on `full_regional_cesm_dart` |
 | CUPiD | (fixed) | `v0.3.1` |
 
