@@ -129,3 +129,62 @@ The commit of every package installed is recorded in `install.d/installed_<times
 | CESM_DA | `CESM_DA_REF` | commit `fa0f040` on `full_regional_cesm_dart` |
 | CUPiD | (fixed) | `v0.3.1` |
 
+## Updates
+
+### Notebooks
+
+To re-render the notebooks from the latest CrocoGallery, run:
+
+```bash
+./install.sh --notebooks -f
+```
+
+This re-clones CrocoGallery only, without touching CrocoDash or its env. **It overwrites the notebooks with the same name in `workspace/`**, so rename or copy any notebook you have edited before running it.
+
+### Packages
+
+To update an installed package, there are two options:
+
+1. Force-reinstall it:  `./install.sh --<packagename`, e.g. `./install.sh CESM`; **This deletes the current checkout and its conda environment, if it has one,** and reinstalls the package from scratch. If you force-reinstall but would like to check out a specific tag/branch/commit see [Package versions](#package-versions).
+
+2. Skip the delete step and update the existing checkout in place with git. For model2obs, mom6-tools and CrocoGallery, from the CROCODILEworkspace root:
+
+    ```bash
+    cd <package>
+    git checkout <branch>
+    git pull
+    ```
+
+    where `<package>` and `<branch>` are `model2obs` and `main`, or `mom6-tools` and `CROCODILE_workshop_2026`. (For CrocoGallery, see [Notebooks](#notebooks) above.)
+
+    Some packages need an extra step:
+
+    ```bash
+    cd CrocoDash
+    git checkout main
+    git pull
+    git submodule update --init --recursive
+    ```
+
+    ```bash
+    cd CESM
+    git checkout full_regional_cesm
+    git pull
+    ./bin/git-fleximod update
+    ```
+
+    ``` bash
+    cd CESM_DA
+    git checkout full_regional_cesm_dart
+    git pull
+    ./bin/git-fleximod update
+    ```
+
+    To use a different branch, tag or commit, check it out instead of the branch above.
+
+CrocoDash, model2obs and mom6-tools are installed in their conda environments in editable mode, so code changes pulled with git are picked up without reinstalling. If an update changes the package's `environment.yml`, rebuild its environment from the updated checkout, without re-cloning it:
+
+```bash
+./install.sh --crocodash --envs-only -f
+```
+
