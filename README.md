@@ -45,7 +45,7 @@ From the repository root, run:
 - `--dart`: Root path of an existing DART installation, used by model2obs (see [DART](#dart) below)
 - `--all`: Install all packages (includes `--notebooks`)
 - `--workshop`: Install all and only the packages used during the CROCODILE workshop (includes `--notebooks`)
-- `--notebooks`: Render the CrocoGallery notebooks listed in `install.d/notebooks.txt` into `workspace/` (implies `--crocogallery`). Uses the CrocoDash conda env, so install `--crocodash` in the same run or an earlier one. To re-render the notebooks from the latest CrocoGallery, run `./install.sh --notebooks -f`: it re-clones CrocoGallery only, without touching CrocoDash or its env
+- `--notebooks`: Render the CrocoGallery notebooks listed in `install.d/notebooks.txt` into `workspace/` (implies `--crocogallery`). Uses the CrocoDash conda env, so install `--crocodash` in the same run or an earlier one. To re-render the notebooks from the latest CrocoGallery, run `./install.sh --notebooks -f`: it re-clones CrocoGallery only, without touching CrocoDash or its env. Existing notebooks in `workspace/` are never overwritten (see [Workspace](#workspace))
 
 #### Installation Options
 - `-d, --default`: Use default paths for all packages (default behaviour, non-interactive)
@@ -121,7 +121,7 @@ The installer resolves the DART root in this order:
 
 The installer creates a `workspace/` folder at the repository root. Some packages copy their tutorial notebooks and configurations there.
 
-With `--notebooks` (included in `--all` and `--workshop`), the installer also renders the CrocoGallery notebooks listed in `install.d/notebooks.txt` into `workspace/`, one notebook ID per line, each saved as `workspace/<ID>.ipynb`. A notebook's ID is its path inside `CrocoGallery/`, with `/` replaced by `.` and without `.ipynb` (e.g. `crocodash/tutorial-ocn.ipynb` is `crocodash.tutorial-ocn`).
+With `--notebooks` (included in `--all` and `--workshop`), the installer also renders the CrocoGallery notebooks listed in `install.d/notebooks.txt` into `workspace/`, one notebook ID per line, each saved as `workspace/<ID>.ipynb`. If `workspace/<ID>.ipynb` already exists, it is left untouched and the new render is saved as `workspace/<ID>_COPY1.ipynb` (or `_COPY2`, `_COPY3`, ... if those exist too); the same applies to the notebooks copied by `--mom6-tools`. A notebook's ID is its path inside `CrocoGallery/`, with `/` replaced by `.` and without `.ipynb` (e.g. `crocodash/tutorial-ocn.ipynb` is `crocodash.tutorial-ocn`).
 
 The notebooks are filled in with the case directory and input directory to use (`croc_cases/` and `croc_input/`, at the CROCODILEworkspace root next to `CESM/`). To put them somewhere else, export `CASES_PATH` or `INPUT_PATH` before running the installer.
 
@@ -153,7 +153,7 @@ To re-render the notebooks from the latest CrocoGallery, run:
 ./install.sh --notebooks -f
 ```
 
-This re-clones CrocoGallery only, without touching CrocoDash or its env. **It overwrites the notebooks with the same name in `workspace/`**, so rename or copy any notebook you have edited before running it.
+This re-clones CrocoGallery only, without touching CrocoDash or its env. Notebooks already in `workspace/` are not overwritten: each new render is saved as `<ID>_COPY1.ipynb` (or the next free `_COPYn`). The install record lists which file each notebook was rendered to.
 
 #### Packages
 
