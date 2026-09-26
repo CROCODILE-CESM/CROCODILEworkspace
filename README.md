@@ -119,7 +119,7 @@ The installer resolves the DART root in this order:
 
 ## Workspace
 
-The installer creates a `workspace/` folder at the repository root. Some packages copy their tutorial notebooks and configurations there.
+The installer creates a `workspace/` folder at the repository root. Some packages copy their tutorial notebooks there.
 
 With `--notebooks` (included in `--all` and `--workshop`), the installer also renders the CrocoGallery notebooks listed in `install.d/notebooks.txt` into `workspace/`, one notebook ID per line, each saved as `workspace/<ID>.ipynb`. If `workspace/<ID>.ipynb` already exists, it is left untouched and the new render is saved as `workspace/<ID>_COPY1.ipynb` (or `_COPY2`, `_COPY3`, ... if those exist too); the same applies to the notebooks copied by `--mom6-tools`. A notebook's ID is its path inside `CrocoGallery/`, with `/` replaced by `.` and without `.ipynb` (e.g. `crocodash/tutorial-ocn.ipynb` is `crocodash.tutorial-ocn`).
 

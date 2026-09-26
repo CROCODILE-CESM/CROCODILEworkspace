@@ -5,6 +5,8 @@
 crocodash.tutorial-ocn
 crocodash.tutorial-ocn-wav
 crocodash.tutorial-ocn-wav-ice
+model2obs.tutorial_MOM6-CL-comparison-Hawaii
+model2obs.tutorial_MOM6-CL-comparison-NWA-parallel
 model2obs.tutorial_CrocoLake_map_temperature
 dart.tutorial1_real_observations
 dart.tutorial2_synthetic_observations
