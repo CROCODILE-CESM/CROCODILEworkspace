@@ -2,6 +2,20 @@
 
 A template repository for regional ocean modeling workflows using tools developed in the NSF-funded [CROCODILE](https://github.com/CROCODILE-CESM?view_as=public) project.
 
+In short: create your own repository from this template, run `./install.sh --workshop` to clone the CROCODILE packages, build their conda environments and render the tutorial notebooks into `workspace/`, then work from there.
+
+**Contents**
+
+- [Usage](#usage): using this repository as a template
+- [Installation](#installation): running the installer
+  - [Available Flags](#available-flags): package selection and installation options
+  - [DART](#dart): pointing model2obs at a DART build
+  - [Examples](#examples): common install commands
+- [Subpackages](#subpackages): what each package is for
+- [Workspace](#workspace): the `workspace/` folder and the rendered notebooks
+- [Package versions](#package-versions): the versions installed by default, and how to pick others
+  - [Updates](#updates): re-rendering the notebooks and updating packages or their environments
+
 ## Usage
 
 This repository is a GitHub template. Click **Use this template** to create your own repository (e.g., `MyRegionalCase`), then run the installation script to set up the packages, and you can commit and track your work. CROCODILEworkspace itself remains lightweight by not committing the installed packages (they are cloned and gitignored); each run records the exact commit of every installed package in `install.d/installed_<timestamp>.txt`.
@@ -36,7 +50,8 @@ From the repository root, run:
 #### Installation Options
 - `-d, --default`: Use default paths for all packages (default behaviour, non-interactive)
 - `-p, --paths`: Prompt for each package path (interactive; mutually exclusive with `-d`)
-- `-f, --force`: Remove and reinstall selected packages if they already exist
+- `-f, --force`: Remove and reinstall selected packages, and overwrite their conda environments, if they already exist
+- `--envs-only`: Only build the conda environments of the selected packages, without touching their checkouts or the notebooks in `workspace/`; combine with `-f` to remove and rebuild environments that already exist
 - `-s, --ssh-github`: Use SSH URLs instead of HTTPS for GitHub clones (requires SSH key setup)
 - `-e, --envname`: Specify prefix for conda environment names (default: no prefix, e.g. the CrocoDash environment is named `CrocoDash`; with `--envname croc` it becomes `croc-CrocoDash`)
 - `-h, --help`: Display usage information and exit
@@ -44,6 +59,10 @@ From the repository root, run:
 You can combine multiple flags. Default paths are used unless you pass `-p`/`--paths`, which prompts for each package path and requires an interactive terminal.
 
 If a package already exists at the target path, the script stops with an error before installing anything. Use the `-f` or `--force` flag to remove and reinstall existing packages.
+
+Likewise, the script stops with an error also if any of the conda environments the selected packages need already exists. Use `-f`/`--force` to overwrite the existing environments, or `-e`/`--envname` to pick a different prefix.
+
+To build only the conda environments of packages you have already downloaded, use `--envs-only`: the environments are built from the existing checkouts, and nothing is re-cloned, cleaned, or re-rendered. As in a normal install, it stops if any of the environments already exists; add `-f` to remove and rebuild them (the checkouts are still left untouched), or use `-e`/`--envname` to build them under a different prefix. With `--cesm_da` it rebuilds the `CESM_DA` environment (from the CrocoDash checkout) even without `--notebooks`; CESM has no environment. model2obs's tutorial data is not copied again.
 
 ### DART
 
@@ -73,6 +92,9 @@ The installer resolves the DART root in this order:
 
 # Reinstall CESM (force reinstall if already exists)
 ./install.sh --cesm -f
+
+# Rebuild only the CrocoDash and mom6-tools conda environments
+./install.sh --crocodash --mom6-tools --envs-only -f
 
 # Install using SSH URLs (requires GitHub SSH key)
 ./install.sh --crocodash --cupid -s
@@ -105,7 +127,7 @@ The notebooks are filled in with the case directory and input directory to use (
 
 On GLADE, the notebooks are also filled in with the paths to the shared datasets (GEBCO, TPXO, ...) and with the workshop job settings (the `tutorial` queue, project `UCGD0009` and the walltimes).
 
-### Package versions
+## Package versions
 
 By default, the installer checks out the versions in the table below, which were tested together. To install a different tag, branch or commit, export the matching variable, e.g. `CESM_REF=full_regional_cesm ./install.sh --cesm` to get the newest CESM on that branch.
 
@@ -120,4 +142,63 @@ The commit of every package installed is recorded in `install.d/installed_<times
 | CESM | `CESM_REF` | branch `workshop_2026` |
 | CESM_DA | `CESM_DA_REF` | commit `fa0f040` on `full_regional_cesm_dart` |
 | CUPiD | (fixed) | `v0.3.1` |
+
+### Updates
+
+#### Notebooks
+
+To re-render the notebooks from the latest CrocoGallery, run:
+
+```bash
+./install.sh --notebooks -f
+```
+
+This re-clones CrocoGallery only, without touching CrocoDash or its env. **It overwrites the notebooks with the same name in `workspace/`**, so rename or copy any notebook you have edited before running it.
+
+#### Packages
+
+To update an installed package, there are two options:
+
+1. Force-reinstall it:  `./install.sh --<packagename`, e.g. `./install.sh CESM`; **This deletes the current checkout and its conda environment, if it has one,** and reinstalls the package from scratch. If you force-reinstall but would like to check out a specific tag/branch/commit see [Package versions](#package-versions).
+
+2. Skip the delete step and update the existing checkout in place with git. For model2obs, mom6-tools and CrocoGallery, from the CROCODILEworkspace root:
+
+    ```bash
+    cd <package>
+    git checkout <branch>
+    git pull
+    ```
+
+    where `<package>` and `<branch>` are `model2obs` and `main`, or `mom6-tools` and `CROCODILE_workshop_2026`. (For CrocoGallery, see [Notebooks](#notebooks) above.)
+
+    Some packages need an extra step:
+
+    ```bash
+    cd CrocoDash
+    git checkout main
+    git pull
+    git submodule update --init --recursive
+    ```
+
+    ```bash
+    cd CESM
+    git checkout full_regional_cesm
+    git pull
+    ./bin/git-fleximod update
+    ```
+
+    ``` bash
+    cd CESM_DA
+    git checkout full_regional_cesm_dart
+    git pull
+    ./bin/git-fleximod update
+    ```
+
+    To use a different branch, tag or commit, check it out instead of the branch above.
+
+CrocoDash, model2obs and mom6-tools are installed in their conda environments in editable mode, so code changes pulled with git are picked up without reinstalling. If an update changes the package's `environment.yml`, rebuild its environment from the updated checkout, without re-cloning it:
+
+```bash
+./install.sh --crocodash --envs-only -f
+```
 

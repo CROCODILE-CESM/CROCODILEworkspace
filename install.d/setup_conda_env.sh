@@ -2,6 +2,12 @@
 
 set -euo pipefail
 
+# Function to check whether a conda environment with the given name exists
+# Arguments: $1 = environment name
+conda_env_exists() {
+    conda env list | awk -v env="$1" '$1 == env {found=1} END {exit !found}'
+}
+
 # Function to add environment variables to conda environment
 # Arguments: $1 = environment name
 add_env_vars_to_conda() {
@@ -55,5 +61,6 @@ add_env_vars_to_conda() {
     echo "Environment variables configured for $ENV_NAME"
 }
 
-# Export the function so it can be used by install.sh
+# Export the functions so they can be used by install.sh
+export -f conda_env_exists
 export -f add_env_vars_to_conda

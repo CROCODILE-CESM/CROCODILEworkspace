@@ -26,7 +26,11 @@ Package Selection:
 Installation Options:
   -d, --default     Use default paths for all packages (default behaviour, non-interactive)
   -p, --paths       Specify paths for all packages (interactive)
-  -f, --force       Remove and reinstall selected packages if they already exist
+  -f, --force       Remove and reinstall selected packages (and overwrite their
+                    conda environments) if they already exist
+      --envs-only   Only build the conda environments of the selected packages,
+                    leaving their checkouts (and notebooks) untouched; add -f to
+                    remove and rebuild environments that already exist
   -s, --ssh-github  Use SSH URLs instead of HTTPS for GitHub clones (requires SSH key)
   -e, --envname     Specify prefix for conda environment names (default: none)
   -h, --help        Display this help message
@@ -39,10 +43,15 @@ Examples:
   ./install.sh --crocodash --notebooks
   ./install.sh --notebooks -f      (re-render the notebooks from CrocoGallery main)
   ./install.sh --model2obs --dart /glade/work/me/DART
+  ./install.sh --crocodash --mom6-tools --envs-only -f
 
 Notes:
   - Multiple flags can be combined
-  - If a package already exists, the installer stops unless -f/--force is used
+  - If a package or conda environment already exists, the installer stops
+    unless -f/--force is used
+  - --envs-only requires the selected packages to be already downloaded; with
+    --cesm_da it rebuilds the CESM_DA env (from the CrocoDash checkout), and
+    CESM itself has no env
   - Edit install.d/notebooks.txt to change which gallery notebooks --notebooks renders
   - DART is not installed here: model2obs is pointed at an existing build.
     Override its location with --dart, or by exporting DART_ROOT_PATH.
@@ -121,7 +130,7 @@ fi
 
 # --notebooks renders with the CrocoDash env's Python. When CrocoDash isn't
 # being installed in this run, reuse the env an earlier install built.
-if [[ "$INSTALL_NOTEBOOKS" -eq 1 && "$INSTALL_CROCODASH" -eq 0 ]]; then
+if [[ "$INSTALL_NOTEBOOKS" -eq 1 && "$INSTALL_CROCODASH" -eq 0 && "$ENVS_ONLY" -eq 0 ]]; then
     CROCODASH_ENV_NAME="${ENV_PREFIX:+${ENV_PREFIX}-}CrocoDash"
     if ! conda env list | awk '{print $1}' | grep -qx "$CROCODASH_ENV_NAME"; then
         echo "Error: --notebooks needs the CrocoDash conda env '$CROCODASH_ENV_NAME'." >&2
@@ -130,12 +139,35 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 && "$INSTALL_CROCODASH" -eq 0 ]]; then
     fi
 fi
 
-if [[ "$FORCE" -eq 1 ]]; then
-    ./clean.sh
-fi
+if [[ "$ENVS_ONLY" -eq 1 ]]; then
+    # The envs are built from the existing checkouts, so they must be there;
+    # CESM_DA's env is built from CrocoDash's environment.yml.
+    MISSING_PACKAGES=()
+    check_downloaded() {
+        if [[ ! -d "$2" ]]; then
+            MISSING_PACKAGES+=("$1 at $2")
+        fi
+    }
+    [[ "$INSTALL_CROCODASH" -eq 1 || "$INSTALL_CESM_DA" -eq 1 ]] && check_downloaded "CrocoDash" "$CROCODASH_PATH"
+    [[ "$INSTALL_MODEL2OBS" -eq 1 ]] && check_downloaded "model2obs" "$MODEL2OBS_PATH"
+    [[ "$INSTALL_MOM6TOOLS" -eq 1 ]] && check_downloaded "mom6-tools" "$MOM6TOOLS_PATH"
+    [[ "$INSTALL_CUPID" -eq 1 ]] && check_downloaded "CUPiD" "$CUPID_PATH"
+    if [[ "${#MISSING_PACKAGES[@]}" -gt 0 ]]; then
+        echo "Error: --envs-only needs the following packages to be already downloaded:" >&2
+        for PKG in "${MISSING_PACKAGES[@]}"; do
+            echo "  - $PKG" >&2
+        done
+        echo "Install them first by running without --envs-only." >&2
+        exit 1
+    fi
+else
+    if [[ "$FORCE" -eq 1 ]]; then
+        ./clean.sh
+    fi
 
-# download submodules
-./init.sh
+    # download submodules
+    ./init.sh
+fi
 
 # install submodules
 
@@ -147,14 +179,80 @@ mkdir -p $NBS_PATH
 if [[ -n ${ENV_PREFIX:-} ]]; then
     ENV_PREFIX="${ENV_PREFIX}-"
 fi
+
+#### Conda environment existence check
+# Resolve every env name up front (the yml-derived ones need the fresh
+# clones, so this has to run after init.sh) and interrupt the install if any
+# of them already exists, so that nothing gets overwritten without -f.
+
+if [[ "$INSTALL_CROCODASH" -eq 1 ]]; then
+    ENV_NAME=$(awk -F ": " '/^name:/ {print $2}' "$CROCODASH_PATH/environment.yml")
+    CROCODASH_ENV_NAME="${ENV_PREFIX}${ENV_NAME}"
+fi
+if [[ "$INSTALL_MODEL2OBS" -eq 1 ]]; then
+    MODEL2OBS_ENV_NAME="${ENV_PREFIX}""model2obs"
+fi
+if [[ "$INSTALL_MOM6TOOLS" -eq 1 ]]; then
+    ENV_NAME=$(awk -F ": " '/^name:/ {print $2}' "$MOM6TOOLS_PATH/environment.yml")
+    MOM6TOOLS_ENV_NAME="${ENV_PREFIX}${ENV_NAME}"
+fi
+if [[ "$INSTALL_CUPID" -eq 1 ]]; then
+    ENV_NAME=$(awk -F ": " '/^name:/ {print $2}' "$CUPID_PATH"/environments/cupid-infrastructure.yml)
+    CUPID_ENV1_NAME="${ENV_PREFIX}${ENV_NAME}"
+    ENV_NAME=$(awk -F ": " '/^name:/ {print $2}' "$CUPID_PATH"/environments/cupid-analysis.yml)
+    CUPID_ENV2_NAME="${ENV_PREFIX}${ENV_NAME}"
+fi
+# With --envs-only, --cesm_da is only there to select its env, so build it
+# even without --notebooks.
+if [[ "$INSTALL_CESM_DA" -eq 1 ]] && [[ "$INSTALL_NOTEBOOKS" -eq 1 || "$ENVS_ONLY" -eq 1 ]]; then
+    CESM_DA_ENV_NAME="${ENV_PREFIX}CESM_DA"
+fi
+
+# Only the envs this run builds: CROCODASH_ENV_NAME is also set by --notebooks
+# to reuse an existing env, so go by the install flags instead.
+SELECTED_ENVS=()
+[[ "$INSTALL_CROCODASH" -eq 1 ]] && SELECTED_ENVS+=("$CROCODASH_ENV_NAME")
+[[ "$INSTALL_MODEL2OBS" -eq 1 ]] && SELECTED_ENVS+=("$MODEL2OBS_ENV_NAME")
+[[ "$INSTALL_MOM6TOOLS" -eq 1 ]] && SELECTED_ENVS+=("$MOM6TOOLS_ENV_NAME")
+[[ "$INSTALL_CUPID" -eq 1 ]] && SELECTED_ENVS+=("$CUPID_ENV1_NAME" "$CUPID_ENV2_NAME")
+[[ -n "${CESM_DA_ENV_NAME:-}" ]] && SELECTED_ENVS+=("$CESM_DA_ENV_NAME")
+
+if [[ "$ENVS_ONLY" -eq 1 && "${#SELECTED_ENVS[@]}" -eq 0 ]]; then
+    echo "Error: none of the selected packages has a conda environment to build." >&2
+    exit 1
+fi
+
+if [[ "$FORCE" -eq 1 && "$ENVS_ONLY" -eq 1 ]]; then
+    for ENV_NAME in "${SELECTED_ENVS[@]}"; do
+        if conda_env_exists "$ENV_NAME"; then
+            echo "Removing conda environment $ENV_NAME..."
+            conda env remove --name "$ENV_NAME" --yes
+        fi
+    done
+elif [[ "$FORCE" -ne 1 ]]; then
+    EXISTING_ENVS=()
+    for ENV_NAME in "${SELECTED_ENVS[@]}"; do
+        if conda_env_exists "$ENV_NAME"; then
+            EXISTING_ENVS+=("$ENV_NAME")
+        fi
+    done
+
+    if [[ "${#EXISTING_ENVS[@]}" -gt 0 ]]; then
+        echo "Error: the following conda environments already exist:" >&2
+        for ENV_NAME in "${EXISTING_ENVS[@]}"; do
+            echo "  - $ENV_NAME" >&2
+        done
+        echo "Use -f or --force to overwrite them, or -e/--envname to pick a different prefix." >&2
+        exit 1
+    fi
+fi
+
 # CrocoDash
 if [[ "$INSTALL_CROCODASH" -eq 1 ]]; then
     echo "Installing CrocoDash environment..."
     cd "$CROCODASH_PATH"
     CROCODASH_SHA=$(git rev-parse HEAD)
     cd "$INSTALL_DIR"
-    ENV_NAME=$(awk -F ": " '/^name:/ {print $2}' "$CROCODASH_PATH/environment.yml")
-    CROCODASH_ENV_NAME="${ENV_PREFIX}${ENV_NAME}"
     mamba env create -f "$CROCODASH_PATH"/environment.yml --name ${CROCODASH_ENV_NAME} --yes
     add_env_vars_to_conda "$CROCODASH_ENV_NAME"
     echo "CrocoDash environment installed."
@@ -162,7 +260,7 @@ fi
 
 # CrocoGallery notebooks
 RENDERED_NOTEBOOKS=()
-if [[ "$INSTALL_NOTEBOOKS" -eq 1 ]]; then
+if [[ "$INSTALL_NOTEBOOKS" -eq 1 && "$ENVS_ONLY" -eq 0 ]]; then
     NOTEBOOKS_LIST="$INSTALL_DIR/notebooks.txt"
     if [[ ! -f "$NOTEBOOKS_LIST" ]]; then
         echo "WARNING: --notebooks passed but $NOTEBOOKS_LIST is missing; skipping."
@@ -215,14 +313,21 @@ if [[ "$INSTALL_MODEL2OBS" -eq 1 ]]; then
     cd "$MODEL2OBS_PATH"/install
     MODEL2OBS_SHA=$(git rev-parse HEAD)
     cp envpaths_NCAR.sh envpaths.sh
-    MODEL2OBS_ENV_NAME="${ENV_PREFIX}""model2obs"
-    DART_ROOT_PATH=${DART_ROOT_PATH} CONDA_ENV_NAME=${MODEL2OBS_ENV_NAME} ./install_NCAR.sh --tutorial
+    # --tutorial copies the tutorial data over whatever the tutorials wrote
+    # into it, so leave it out when only rebuilding the env
+    MODEL2OBS_FLAGS=()
+    if [[ "$ENVS_ONLY" -eq 0 ]]; then
+        MODEL2OBS_FLAGS+=(--tutorial)
+    fi
+    DART_ROOT_PATH=${DART_ROOT_PATH} CONDA_ENV_NAME=${MODEL2OBS_ENV_NAME} ./install_NCAR.sh "${MODEL2OBS_FLAGS[@]}"
     cd "$INSTALL_DIR"
     echo "model2obs environment installed."
-    cp "$MODEL2OBS_PATH"/tutorials/tutorial_MOM6-CL-comparison-Hawaii.ipynb "$NBS_PATH"
-    cp "$MODEL2OBS_PATH"/tutorials/config_tutorial_hawaii.yaml "$NBS_PATH"
-    cp "$MODEL2OBS_PATH"/tutorials/tutorial_MOM6-CL-comparison-NWA-parallel.ipynb "$NBS_PATH"
-    cp "$MODEL2OBS_PATH"/tutorials/config_tutorial_NWA_parallel.yaml "$NBS_PATH"
+    if [[ "$ENVS_ONLY" -eq 0 ]]; then
+        cp "$MODEL2OBS_PATH"/tutorials/tutorial_MOM6-CL-comparison-Hawaii.ipynb "$NBS_PATH"
+        cp "$MODEL2OBS_PATH"/tutorials/config_tutorial_hawaii.yaml "$NBS_PATH"
+        cp "$MODEL2OBS_PATH"/tutorials/tutorial_MOM6-CL-comparison-NWA-parallel.ipynb "$NBS_PATH"
+        cp "$MODEL2OBS_PATH"/tutorials/config_tutorial_NWA_parallel.yaml "$NBS_PATH"
+    fi
 fi
 
 # mom6-tools
@@ -231,17 +336,17 @@ if [[ "$INSTALL_MOM6TOOLS" -eq 1 ]]; then
     cd "$MOM6TOOLS_PATH"
     MOM6TOOLS_SHA=$(git rev-parse HEAD)
     cd "$INSTALL_DIR"
-    ENV_NAME=$(awk -F ": " '/^name:/ {print $2}' "$MOM6TOOLS_PATH/environment.yml")
-    MOM6TOOLS_ENV_NAME="${ENV_PREFIX}${ENV_NAME}"
     mamba env create -f "$MOM6TOOLS_PATH"/environment.yml --name ${MOM6TOOLS_ENV_NAME} --yes
     add_env_vars_to_conda "$MOM6TOOLS_ENV_NAME"
     echo "mom6-tools environment installed."
 
     # Notebooks are copied straight out of the checkout, same as the model2obs
-    MOM6TOOLS_NBS_DIR="mom6_tools/nb_templates/regional_notebooks"
-    for NB in "$MOM6TOOLS_PATH/$MOM6TOOLS_NBS_DIR"/*.ipynb; do
-        cp "$NB" "${NBS_PATH}mom6_tools.$(basename "$NB")"
-    done
+    if [[ "$ENVS_ONLY" -eq 0 ]]; then
+        MOM6TOOLS_NBS_DIR="mom6_tools/nb_templates/regional_notebooks"
+        for NB in "$MOM6TOOLS_PATH/$MOM6TOOLS_NBS_DIR"/*.ipynb; do
+            cp "$NB" "${NBS_PATH}mom6_tools.$(basename "$NB")"
+        done
+    fi
 fi
 
 # CUPiD
@@ -252,13 +357,9 @@ if [[ "$INSTALL_CUPID" -eq 1 ]]; then
     CUPID_SHA=$(git rev-parse HEAD)
     cd "$INSTALL_DIR"
 
-    ENV_NAME=$(awk -F ": " '/^name:/ {print $2}' "$CUPID_PATH"/environments/cupid-infrastructure.yml)
-    CUPID_ENV1_NAME="${ENV_PREFIX}${ENV_NAME}"
     mamba env create -f "$CUPID_PATH"/environments/cupid-infrastructure.yml --name ${CUPID_ENV1_NAME} --yes
     add_env_vars_to_conda "$CUPID_ENV1_NAME"
 
-    ENV_NAME=$(awk -F ": " '/^name:/ {print $2}' "$CUPID_PATH"/environments/cupid-analysis.yml)
-    CUPID_ENV2_NAME="${ENV_PREFIX}${ENV_NAME}"
     mamba env create -f "$CUPID_PATH"/environments/cupid-analysis.yml --name ${CUPID_ENV2_NAME} --yes
     add_env_vars_to_conda "$CUPID_ENV2_NAME"
 
@@ -266,7 +367,9 @@ if [[ "$INSTALL_CUPID" -eq 1 ]]; then
 fi
 
 # CESM
-if [[ "$INSTALL_CESM" -eq 1 ]]; then
+if [[ "$INSTALL_CESM" -eq 1 && "$ENVS_ONLY" -eq 1 ]]; then
+    echo "CESM has no conda environment; skipping."
+elif [[ "$INSTALL_CESM" -eq 1 ]]; then
     echo "Installing CESM..."
     cd "$CESM_PATH"
     CESM_SHA=$(git rev-parse HEAD)
@@ -277,32 +380,35 @@ fi
 
 # CESM_DA
 if [[ "$INSTALL_CESM_DA" -eq 1 ]]; then
-    echo "Installing CESM_DA..."
-    cd "$CESM_DA_PATH"
-    CESM_DA_SHA=$(git rev-parse HEAD)
-    ./bin/git-fleximod update --path "$CESM_DA_PATH"
-    cd "$INSTALL_DIR"
+    if [[ "$ENVS_ONLY" -eq 0 ]]; then
+        echo "Installing CESM_DA..."
+        cd "$CESM_DA_PATH"
+        CESM_DA_SHA=$(git rev-parse HEAD)
+        ./bin/git-fleximod update --path "$CESM_DA_PATH"
+        cd "$INSTALL_DIR"
+    fi
 
     # The CESM_DA conda env only exists to run the DART notebooks, so only
-    # build it when --notebooks is requested. It's built from CrocoDash's own
+    # build it when --notebooks (or --envs-only) is requested. It's built from CrocoDash's own
     # environment.yml (its pip -e paths resolve relative to that file's
     # directory, so the generated copy has to live alongside the real
     # CrocoDash/gallery/rm6 checkouts) plus the DART notebook packages that
     # aren't part of CrocoDash itself.
-    if [[ "$INSTALL_NOTEBOOKS" -eq 1 ]]; then
+    if [[ -n "${CESM_DA_ENV_NAME:-}" ]]; then
         echo "Building CESM_DA conda environment..."
         CESM_DA_ENV_FILE="$CROCODASH_PATH/cesm_da_environment.yml"
         awk '
             /^  - pip:/ { print; print "    - pydartdiags"; print "    - dartobsgen"; next }
             { print }
         ' "$CROCODASH_PATH/environment.yml" > "$CESM_DA_ENV_FILE"
-        CESM_DA_ENV_NAME="${ENV_PREFIX}CESM_DA"
         mamba env create -f "$CESM_DA_ENV_FILE" --name ${CESM_DA_ENV_NAME} --yes
         add_env_vars_to_conda "$CESM_DA_ENV_NAME"
         rm -f "$CESM_DA_ENV_FILE"
     fi
 
-    echo "CESM_DA installed."
+    if [[ "$ENVS_ONLY" -eq 0 ]]; then
+        echo "CESM_DA installed."
+    fi
 fi
 
 cat <<'EOF'
@@ -339,8 +445,13 @@ cat <<'EOF'
 EOF
 
 echo ""
-echo "Install complete."
-echo "Components, environments and paths installed:"
+if [[ "$ENVS_ONLY" -eq 1 ]]; then
+    echo "Conda environments built."
+    echo "Components, environments and paths:"
+else
+    echo "Install complete."
+    echo "Components, environments and paths installed:"
+fi
 echo ""
 
 DATETIME=$(date "+%Y-%m-%d_%H-%M-%S")
@@ -370,7 +481,7 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 && "${#RENDERED_NOTEBOOKS[@]}" -gt 0 ]]; then
     } | tee -a $INSTALL_RECORD
     echo ""
 fi
-if [[ "$INSTALL_CESM" -eq 1 ]]; then
+if [[ "$INSTALL_CESM" -eq 1 && "$ENVS_ONLY" -eq 0 ]]; then
     cat <<EOF | tee -a $INSTALL_RECORD
 CESM:
     path:   $CESM_PATH
@@ -381,8 +492,10 @@ fi
 if [[ "$INSTALL_CESM_DA" -eq 1 ]]; then
     {
         echo "CESM_DA:"
-        echo "    path:   $CESM_DA_PATH"
-        echo "    commit: $CESM_DA_SHA"
+        if [[ "$ENVS_ONLY" -eq 0 ]]; then
+            echo "    path:   $CESM_DA_PATH"
+            echo "    commit: $CESM_DA_SHA"
+        fi
         if [[ -n "${CESM_DA_ENV_NAME:-}" ]]; then
             echo "    conda environment: $CESM_DA_ENV_NAME"
         fi

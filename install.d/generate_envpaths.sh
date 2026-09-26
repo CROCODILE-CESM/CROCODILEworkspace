@@ -25,6 +25,7 @@ DEFAULT=1
 DEFAULT_FLAG=0
 PATHS_FLAG=0
 FORCE=0
+ENVS_ONLY=0
 SSH_GITHUB=0
 ENV_PREFIX=''
 NOTEBOOKS=0
@@ -70,6 +71,7 @@ for ((i=1; i<=$#; i++)); do
         -d|--default) DEFAULT_FLAG=1 ;;
         -p|--paths) PATHS_FLAG=1 ;;
         -f|--force) FORCE=1 ;;
+        --envs-only) ENVS_ONLY=1 ;;
         -s|--ssh-github) SSH_GITHUB=1 ;;
         *)
             upper="${arg#--}"
@@ -178,6 +180,7 @@ for PKG in "${!PKG_PATHS[@]}"; do
     echo "export INSTALL_${PKG}=\"$VAL\"" >> "$ENV_FILE"
 done
 echo "export FORCE=\"$FORCE\"" >> "$ENV_FILE"
+echo "export ENVS_ONLY=\"$ENVS_ONLY\"" >> "$ENV_FILE"
 echo "export SSH_GITHUB=\"$SSH_GITHUB\"" >> "$ENV_FILE"
 echo "export ENV_PREFIX=\"$ENV_PREFIX\"" >> "$ENV_FILE"
 echo "export INSTALL_NOTEBOOKS=\"$NOTEBOOKS\"" >> "$ENV_FILE"
