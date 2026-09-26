@@ -26,9 +26,9 @@ fi
 # Versions the workspace installs, frozen for the 2026 workshop so every
 # participant gets the same code (CROCODILEworkspace#15). Export any of these
 # to install a different tag, branch or commit instead (e.g. CESM_REF=main).
-# CrocoDash tracks main until it has a release to pin, and the notebooks are
-# rendered from CrocoGallery main, independent of the gallery CrocoDash pins.
-CROCODASH_REF="${CROCODASH_REF:-main}"
+# CrocoDash is pinned to its v1.0.0 release, and the notebooks are rendered
+# from CrocoGallery main, independent of the gallery CrocoDash pins.
+CROCODASH_REF="${CROCODASH_REF:-v1.0.0}"
 CROCOGALLERY_REF="${CROCOGALLERY_REF:-main}"
 # Commits on model2obs main, mom6-tools CROCODILE_workshop_2026, and the CESM
 # full_regional_cesm / full_regional_cesm_dart branches.

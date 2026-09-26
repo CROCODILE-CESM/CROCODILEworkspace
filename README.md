@@ -113,7 +113,7 @@ The commit of every package installed is recorded in `install.d/installed_<times
 
 | Package | Variable | Default |
 |---|---|---|
-| CrocoDash | `CROCODASH_REF` | `main` |
+| CrocoDash | `CROCODASH_REF` | tag `v1.0.0` |
 | CrocoGallery | `CROCOGALLERY_REF` | `main` (the notebooks rendered into `workspace/`) |
 | model2obs | `MODEL2OBS_REF` | commit `317af36` on `main` |
 | mom6-tools | `MOM6TOOLS_REF` | commit `8f07f2c` on `CROCODILE_workshop_2026` |
