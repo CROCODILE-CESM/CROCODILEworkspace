@@ -177,12 +177,14 @@ source ./setup_conda_env.sh
 NBS_PATH=$BASK_PATH"/workspace/"
 mkdir -p $NBS_PATH
 
-# Echo a workspace path for <stem>.ipynb that won't overwrite an existing
-# notebook: <stem>.ipynb if free, else <stem>_COPY1.ipynb, _COPY2, ...
-unique_notebook_path() {
-    local stem="$1" path="${NBS_PATH}$1.ipynb" n=1
+# Echo a workspace path for <stem>.<ext> (ext defaults to ipynb) that won't
+# overwrite an existing file: <stem>.<ext> if free, else <stem>_COPY1.<ext>,
+# _COPY2, ...
+unique_workspace_path() {
+    local stem="$1" ext="${2:-ipynb}" n=1
+    local path="${NBS_PATH}${stem}.${ext}"
     while [[ -e "$path" ]]; do
-        path="${NBS_PATH}${stem}_COPY${n}.ipynb"
+        path="${NBS_PATH}${stem}_COPY${n}.${ext}"
         n=$((n + 1))
     done
     echo "$path"
@@ -269,19 +271,6 @@ if [[ "$INSTALL_CROCODASH" -eq 1 ]]; then
     echo "CrocoDash environment installed."
 fi
 
-# Config files that gallery notebooks load by a fixed relative name, as
-# "<notebook ID> <config file>": the config lives next to the notebook in
-# CrocoGallery and is copied next to it in workspace/.
-NOTEBOOK_CONFIGS=(
-    "model2obs.tutorial_MOM6-CL-comparison-Hawaii config_tutorial_hawaii.yaml"
-    "model2obs.tutorial_MOM6-CL-comparison-NWA-parallel config_tutorial_NWA_parallel.yaml"
-)
-
-# Gallery folder holding the notebook with the given ID
-gallery_notebook_dir() {
-    dirname "$CROCOGALLERY_PATH/${1//.//}"
-}
-
 # CrocoGallery notebooks
 RENDERED_NOTEBOOKS=()
 if [[ "$INSTALL_NOTEBOOKS" -eq 1 && "$ENVS_ONLY" -eq 0 ]]; then
@@ -315,7 +304,7 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 && "$ENVS_ONLY" -eq 0 ]]; then
             NB="${NB%%#*}"
             NB="${NB//[[:space:]]/}"
             [[ -z "$NB" ]] && continue
-            OUTPUT=$(unique_notebook_path "$NB")
+            OUTPUT=$(unique_workspace_path "$NB")
             if [[ "$OUTPUT" != "${NBS_PATH}${NB}.ipynb" ]]; then
                 echo "  - $NB: ${NB}.ipynb already exists, keeping it"
             fi
@@ -329,23 +318,16 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 && "$ENVS_ONLY" -eq 0 ]]; then
                 --notebook "$NB" \
                 --output "$OUTPUT"
             RENDERED_NOTEBOOKS+=("$NB -> $(basename "$OUTPUT")")
-
-            # The notebook opens its config by name, so the config can't get
-            # a _COPY suffix: keep an existing one instead.
-            for ENTRY in "${NOTEBOOK_CONFIGS[@]}"; do
-                read -r CONFIG_NB CONFIG <<< "$ENTRY"
-                [[ "$CONFIG_NB" != "$NB" ]] && continue
-                if [[ -e "${NBS_PATH}${CONFIG}" ]]; then
-                    echo "  - $CONFIG already exists, keeping it"
-                elif [[ ! -f "$(gallery_notebook_dir "$NB")/$CONFIG" ]]; then
-                    echo "  - WARNING: $CONFIG not found in CrocoGallery, $NB won't find its config"
-                else
-                    cp "$(gallery_notebook_dir "$NB")/$CONFIG" "$NBS_PATH"
-                    echo "  - $CONFIG -> ${NBS_PATH}${CONFIG}"
-                    RENDERED_NOTEBOOKS+=("$CONFIG")
-                fi
-            done
         done < "$NOTEBOOKS_LIST"
+        # Configs the model2obs tutorials load by name. A config that's
+        # already in the workspace is kept, as for the notebooks, and the
+        # notebooks keep reading it; the new one gets a _COPY suffix.
+        for CONFIG in "$CROCOGALLERY_PATH"/model2obs/config_*.yaml; do
+            [[ -f "$CONFIG" ]] || continue
+            OUTPUT=$(unique_workspace_path "$(basename "$CONFIG" .yaml)" yaml)
+            echo "  - $(basename "$CONFIG") -> $OUTPUT"
+            cp "$CONFIG" "$OUTPUT"
+        done
         echo "CrocoGallery notebooks rendered."
     fi
 fi
@@ -367,31 +349,14 @@ if [[ "$INSTALL_MODEL2OBS" -eq 1 ]]; then
     echo "model2obs environment installed."
 fi
 
-# The model2obs tutorials in workspace/ are rendered from CrocoGallery (so
-# they match the online gallery), but they are developed in model2obs and
-# have to match the model2obs code installed. Warn if the two have drifted.
-if [[ "$ENVS_ONLY" -eq 0 && ( "$INSTALL_NOTEBOOKS" -eq 1 || "$INSTALL_MODEL2OBS" -eq 1 ) \
-      && -d "$CROCOGALLERY_PATH" && -d "$MODEL2OBS_PATH/tutorials" ]]; then
-    DRIFTED=()
-    for ENTRY in "${NOTEBOOK_CONFIGS[@]}"; do
-        read -r CONFIG_NB CONFIG <<< "$ENTRY"
-        [[ "$CONFIG_NB" != model2obs.* ]] && continue
-        NB_FILE="${CONFIG_NB#model2obs.}.ipynb"
-        for FILE in "$NB_FILE" "$CONFIG"; do
-            if ! cmp -s "$(gallery_notebook_dir "$CONFIG_NB")/$FILE" "$MODEL2OBS_PATH/tutorials/$FILE"; then
-                DRIFTED+=("$FILE")
-            fi
-        done
+# The model2obs tutorials are rendered from CrocoGallery (to match the online
+# gallery) but have to match the installed model2obs code: warn if they differ.
+if [[ "$ENVS_ONLY" -eq 0 && -d "$MODEL2OBS_PATH/tutorials" ]]; then
+    for FILE in "$CROCOGALLERY_PATH"/model2obs/{tutorial_MOM6-CL-comparison-*.ipynb,config_*.yaml}; do
+        [[ -f "$FILE" ]] || continue
+        cmp -s "$FILE" "$MODEL2OBS_PATH/tutorials/$(basename "$FILE")" \
+            || echo "WARNING: $(basename "$FILE") differs between CrocoGallery and model2obs"
     done
-    if [[ "${#DRIFTED[@]}" -gt 0 ]]; then
-        echo "WARNING: these model2obs tutorial files differ between CrocoGallery"
-        echo "($CROCOGALLERY_PATH/model2obs) and model2obs ($MODEL2OBS_PATH/tutorials):"
-        for FILE in "${DRIFTED[@]}"; do
-            echo "  - $FILE"
-        done
-        echo "workspace/ gets the CrocoGallery version. If model2obs was updated, push"
-        echo "its tutorials to CrocoGallery so they match the installed model2obs code."
-    fi
 fi
 
 # mom6-tools
@@ -408,7 +373,7 @@ if [[ "$INSTALL_MOM6TOOLS" -eq 1 ]]; then
     if [[ "$ENVS_ONLY" -eq 0 ]]; then
         MOM6TOOLS_NBS_DIR="mom6_tools/nb_templates/regional_notebooks"
         for NB in "$MOM6TOOLS_PATH/$MOM6TOOLS_NBS_DIR"/*.ipynb; do
-            cp "$NB" "$(unique_notebook_path "mom6_tools.$(basename "$NB" .ipynb)")"
+            cp "$NB" "$(unique_workspace_path "mom6_tools.$(basename "$NB" .ipynb)")"
         done
     fi
 fi
