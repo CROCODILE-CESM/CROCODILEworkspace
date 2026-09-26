@@ -2,6 +2,20 @@
 
 A template repository for regional ocean modeling workflows using tools developed in the NSF-funded [CROCODILE](https://github.com/CROCODILE-CESM?view_as=public) project.
 
+In short: create your own repository from this template, run `./install.sh --workshop` to clone the CROCODILE packages, build their conda environments and render the tutorial notebooks into `workspace/`, then work from there.
+
+**Contents**
+
+- [Usage](#usage): using this repository as a template
+- [Installation](#installation): running the installer
+  - [Available Flags](#available-flags): package selection and installation options
+  - [DART](#dart): pointing model2obs at a DART build
+  - [Examples](#examples): common install commands
+- [Subpackages](#subpackages): what each package is for
+- [Workspace](#workspace): the `workspace/` folder and the rendered notebooks
+- [Package versions](#package-versions): the versions installed by default, and how to pick others
+  - [Updates](#updates): re-rendering the notebooks and updating packages or their environments
+
 ## Usage
 
 This repository is a GitHub template. Click **Use this template** to create your own repository (e.g., `MyRegionalCase`), then run the installation script to set up the packages, and you can commit and track your work. CROCODILEworkspace itself remains lightweight by not committing the installed packages (they are cloned and gitignored); each run records the exact commit of every installed package in `install.d/installed_<timestamp>.txt`.
@@ -113,7 +127,7 @@ The notebooks are filled in with the case directory and input directory to use (
 
 On GLADE, the notebooks are also filled in with the paths to the shared datasets (GEBCO, TPXO, ...) and with the workshop job settings (the `tutorial` queue, project `UCGD0009` and the walltimes).
 
-### Package versions
+## Package versions
 
 By default, the installer checks out the versions in the table below, which were tested together. To install a different tag, branch or commit, export the matching variable, e.g. `CESM_REF=full_regional_cesm ./install.sh --cesm` to get the newest CESM on that branch.
 
@@ -129,9 +143,9 @@ The commit of every package installed is recorded in `install.d/installed_<times
 | CESM_DA | `CESM_DA_REF` | commit `fa0f040` on `full_regional_cesm_dart` |
 | CUPiD | (fixed) | `v0.3.1` |
 
-## Updates
+### Updates
 
-### Notebooks
+#### Notebooks
 
 To re-render the notebooks from the latest CrocoGallery, run:
 
@@ -141,7 +155,7 @@ To re-render the notebooks from the latest CrocoGallery, run:
 
 This re-clones CrocoGallery only, without touching CrocoDash or its env. **It overwrites the notebooks with the same name in `workspace/`**, so rename or copy any notebook you have edited before running it.
 
-### Packages
+#### Packages
 
 To update an installed package, there are two options:
 
