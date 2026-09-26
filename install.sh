@@ -269,6 +269,19 @@ if [[ "$INSTALL_CROCODASH" -eq 1 ]]; then
     echo "CrocoDash environment installed."
 fi
 
+# Config files that gallery notebooks load by a fixed relative name, as
+# "<notebook ID> <config file>": the config lives next to the notebook in
+# CrocoGallery and is copied next to it in workspace/.
+NOTEBOOK_CONFIGS=(
+    "model2obs.tutorial_MOM6-CL-comparison-Hawaii config_tutorial_hawaii.yaml"
+    "model2obs.tutorial_MOM6-CL-comparison-NWA-parallel config_tutorial_NWA_parallel.yaml"
+)
+
+# Gallery folder holding the notebook with the given ID
+gallery_notebook_dir() {
+    dirname "$CROCOGALLERY_PATH/${1//.//}"
+}
+
 # CrocoGallery notebooks
 RENDERED_NOTEBOOKS=()
 if [[ "$INSTALL_NOTEBOOKS" -eq 1 && "$ENVS_ONLY" -eq 0 ]]; then
@@ -316,6 +329,22 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 && "$ENVS_ONLY" -eq 0 ]]; then
                 --notebook "$NB" \
                 --output "$OUTPUT"
             RENDERED_NOTEBOOKS+=("$NB -> $(basename "$OUTPUT")")
+
+            # The notebook opens its config by name, so the config can't get
+            # a _COPY suffix: keep an existing one instead.
+            for ENTRY in "${NOTEBOOK_CONFIGS[@]}"; do
+                read -r CONFIG_NB CONFIG <<< "$ENTRY"
+                [[ "$CONFIG_NB" != "$NB" ]] && continue
+                if [[ -e "${NBS_PATH}${CONFIG}" ]]; then
+                    echo "  - $CONFIG already exists, keeping it"
+                elif [[ ! -f "$(gallery_notebook_dir "$NB")/$CONFIG" ]]; then
+                    echo "  - WARNING: $CONFIG not found in CrocoGallery, $NB won't find its config"
+                else
+                    cp "$(gallery_notebook_dir "$NB")/$CONFIG" "$NBS_PATH"
+                    echo "  - $CONFIG -> ${NBS_PATH}${CONFIG}"
+                    RENDERED_NOTEBOOKS+=("$CONFIG")
+                fi
+            done
         done < "$NOTEBOOKS_LIST"
         echo "CrocoGallery notebooks rendered."
     fi
@@ -336,11 +365,32 @@ if [[ "$INSTALL_MODEL2OBS" -eq 1 ]]; then
     DART_ROOT_PATH=${DART_ROOT_PATH} CONDA_ENV_NAME=${MODEL2OBS_ENV_NAME} ./install_NCAR.sh "${MODEL2OBS_FLAGS[@]}"
     cd "$INSTALL_DIR"
     echo "model2obs environment installed."
-    if [[ "$ENVS_ONLY" -eq 0 ]]; then
-        cp "$MODEL2OBS_PATH"/tutorials/tutorial_MOM6-CL-comparison-Hawaii.ipynb "$NBS_PATH"
-        cp "$MODEL2OBS_PATH"/tutorials/config_tutorial_hawaii.yaml "$NBS_PATH"
-        cp "$MODEL2OBS_PATH"/tutorials/tutorial_MOM6-CL-comparison-NWA-parallel.ipynb "$NBS_PATH"
-        cp "$MODEL2OBS_PATH"/tutorials/config_tutorial_NWA_parallel.yaml "$NBS_PATH"
+fi
+
+# The model2obs tutorials in workspace/ are rendered from CrocoGallery (so
+# they match the online gallery), but they are developed in model2obs and
+# have to match the model2obs code installed. Warn if the two have drifted.
+if [[ "$ENVS_ONLY" -eq 0 && ( "$INSTALL_NOTEBOOKS" -eq 1 || "$INSTALL_MODEL2OBS" -eq 1 ) \
+      && -d "$CROCOGALLERY_PATH" && -d "$MODEL2OBS_PATH/tutorials" ]]; then
+    DRIFTED=()
+    for ENTRY in "${NOTEBOOK_CONFIGS[@]}"; do
+        read -r CONFIG_NB CONFIG <<< "$ENTRY"
+        [[ "$CONFIG_NB" != model2obs.* ]] && continue
+        NB_FILE="${CONFIG_NB#model2obs.}.ipynb"
+        for FILE in "$NB_FILE" "$CONFIG"; do
+            if ! cmp -s "$(gallery_notebook_dir "$CONFIG_NB")/$FILE" "$MODEL2OBS_PATH/tutorials/$FILE"; then
+                DRIFTED+=("$FILE")
+            fi
+        done
+    done
+    if [[ "${#DRIFTED[@]}" -gt 0 ]]; then
+        echo "WARNING: these model2obs tutorial files differ between CrocoGallery"
+        echo "($CROCOGALLERY_PATH/model2obs) and model2obs ($MODEL2OBS_PATH/tutorials):"
+        for FILE in "${DRIFTED[@]}"; do
+            echo "  - $FILE"
+        done
+        echo "workspace/ gets the CrocoGallery version. If model2obs was updated, push"
+        echo "its tutorials to CrocoGallery so they match the installed model2obs code."
     fi
 fi
 

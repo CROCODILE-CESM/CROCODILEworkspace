@@ -119,9 +119,9 @@ The installer resolves the DART root in this order:
 
 ## Workspace
 
-The installer creates a `workspace/` folder at the repository root. Some packages copy their tutorial notebooks and configurations there.
+The installer creates a `workspace/` folder at the repository root. Some packages copy their tutorial notebooks there.
 
-With `--notebooks` (included in `--all` and `--workshop`), the installer also renders the CrocoGallery notebooks listed in `install.d/notebooks.txt` into `workspace/`, one notebook ID per line, each saved as `workspace/<ID>.ipynb`. If `workspace/<ID>.ipynb` already exists, it is left untouched and the new render is saved as `workspace/<ID>_COPY1.ipynb` (or `_COPY2`, `_COPY3`, ... if those exist too); the same applies to the notebooks copied by `--mom6-tools`. A notebook's ID is its path inside `CrocoGallery/`, with `/` replaced by `.` and without `.ipynb` (e.g. `crocodash/tutorial-ocn.ipynb` is `crocodash.tutorial-ocn`).
+With `--notebooks` (included in `--all` and `--workshop`), the installer also renders the CrocoGallery notebooks listed in `install.d/notebooks.txt` into `workspace/`, one notebook ID per line, each saved as `workspace/<ID>.ipynb`. If `workspace/<ID>.ipynb` already exists, it is left untouched and the new render is saved as `workspace/<ID>_COPY1.ipynb` (or `_COPY2`, `_COPY3`, ... if those exist too); the same applies to the notebooks copied by `--mom6-tools`. Some notebooks load a config file by name (e.g. the model2obs tutorials load `config_tutorial_hawaii.yaml`); the config is copied next to them, and an existing config is kept as is rather than renamed. The model2obs tutorials are rendered from CrocoGallery, so they match the online gallery; if they differ from the tutorials in the installed model2obs checkout, the installer prints a warning. A notebook's ID is its path inside `CrocoGallery/`, with `/` replaced by `.` and without `.ipynb` (e.g. `crocodash/tutorial-ocn.ipynb` is `crocodash.tutorial-ocn`).
 
 The notebooks are filled in with the case directory and input directory to use (`croc_cases/` and `croc_input/`, at the CROCODILEworkspace root next to `CESM/`). To put them somewhere else, export `CASES_PATH` or `INPUT_PATH` before running the installer.
 
