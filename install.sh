@@ -176,6 +176,17 @@ source ./setup_conda_env.sh
 
 NBS_PATH=$BASK_PATH"/workspace/"
 mkdir -p $NBS_PATH
+
+# Echo a workspace path for <stem>.ipynb that won't overwrite an existing
+# notebook: <stem>.ipynb if free, else <stem>_COPY1.ipynb, _COPY2, ...
+unique_notebook_path() {
+    local stem="$1" path="${NBS_PATH}$1.ipynb" n=1
+    while [[ -e "$path" ]]; do
+        path="${NBS_PATH}${stem}_COPY${n}.ipynb"
+        n=$((n + 1))
+    done
+    echo "$path"
+}
 if [[ -n ${ENV_PREFIX:-} ]]; then
     ENV_PREFIX="${ENV_PREFIX}-"
 fi
@@ -291,7 +302,10 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 && "$ENVS_ONLY" -eq 0 ]]; then
             NB="${NB%%#*}"
             NB="${NB//[[:space:]]/}"
             [[ -z "$NB" ]] && continue
-            OUTPUT="${NBS_PATH}${NB}.ipynb"
+            OUTPUT=$(unique_notebook_path "$NB")
+            if [[ "$OUTPUT" != "${NBS_PATH}${NB}.ipynb" ]]; then
+                echo "  - $NB: ${NB}.ipynb already exists, keeping it"
+            fi
             echo "  - $NB -> $OUTPUT"
             # Import crocogallery from the separate checkout rather than the
             # copy installed in the CrocoDash env, so the notebooks come from
@@ -301,7 +315,7 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 && "$ENVS_ONLY" -eq 0 ]]; then
                 "${TEMPLATE_ARGS[@]}" \
                 --notebook "$NB" \
                 --output "$OUTPUT"
-            RENDERED_NOTEBOOKS+=("$NB")
+            RENDERED_NOTEBOOKS+=("$NB -> $(basename "$OUTPUT")")
         done < "$NOTEBOOKS_LIST"
         echo "CrocoGallery notebooks rendered."
     fi
@@ -344,7 +358,7 @@ if [[ "$INSTALL_MOM6TOOLS" -eq 1 ]]; then
     if [[ "$ENVS_ONLY" -eq 0 ]]; then
         MOM6TOOLS_NBS_DIR="mom6_tools/nb_templates/regional_notebooks"
         for NB in "$MOM6TOOLS_PATH/$MOM6TOOLS_NBS_DIR"/*.ipynb; do
-            cp "$NB" "${NBS_PATH}mom6_tools.$(basename "$NB")"
+            cp "$NB" "$(unique_notebook_path "mom6_tools.$(basename "$NB" .ipynb)")"
         done
     fi
 fi
