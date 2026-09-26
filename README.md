@@ -117,7 +117,7 @@ The commit of every package installed is recorded in `install.d/installed_<times
 | CrocoGallery | `CROCOGALLERY_REF` | `main` (the notebooks rendered into `workspace/`) |
 | model2obs | `MODEL2OBS_REF` | commit `317af36` on `main` |
 | mom6-tools | `MOM6TOOLS_REF` | commit `8f07f2c` on `CROCODILE_workshop_2026` |
-| CESM | `CESM_REF` | commit `16dd396` on `full_regional_cesm` |
+| CESM | `CESM_REF` | branch `workshop_2026` |
 | CESM_DA | `CESM_DA_REF` | commit `fa0f040` on `full_regional_cesm_dart` |
 | CUPiD | (fixed) | `v0.3.1` |
 

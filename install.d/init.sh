@@ -31,10 +31,10 @@ fi
 CROCODASH_REF="${CROCODASH_REF:-v1.0.0}"
 CROCOGALLERY_REF="${CROCOGALLERY_REF:-main}"
 # Commits on model2obs main, mom6-tools CROCODILE_workshop_2026, and the CESM
-# full_regional_cesm / full_regional_cesm_dart branches.
+# full_regional_cesm_dart branch; CESM tracks the workshop_2026 branch.
 MODEL2OBS_REF="${MODEL2OBS_REF:-317af3633689e8ae01b2f5e28faaa92d4e16f1b6}"
 MOM6TOOLS_REF="${MOM6TOOLS_REF:-8f07f2ce7001c477c43571fe6f1ac8c28ffd5d85}"
-CESM_REF="${CESM_REF:-16dd39642a99c7072175611dc03f096eeb7d2b58}"
+CESM_REF="${CESM_REF:-workshop_2026}"
 CESM_DA_REF="${CESM_DA_REF:-fa0f040e525ab828e35060dc2826dd8e5653d605}"
 
 # Check out $2 in the current repo, or exit naming package $1 and variable $3.
