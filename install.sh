@@ -319,12 +319,13 @@ if [[ "$INSTALL_NOTEBOOKS" -eq 1 && "$ENVS_ONLY" -eq 0 ]]; then
                 --output "$OUTPUT"
             RENDERED_NOTEBOOKS+=("$NB -> $(basename "$OUTPUT")")
         done < "$NOTEBOOKS_LIST"
-        # Configs the model2obs tutorials load by name. A config that's
-        # already in the workspace is kept, as for the notebooks, and the
-        # notebooks keep reading it; the new one gets a _COPY suffix.
+        # Configs the model2obs tutorials load by name, prefixed with
+        # model2obs. like the notebooks' IDs. A config that's already in the
+        # workspace is kept, as for the notebooks, and the notebooks keep
+        # reading it; the new one gets a _COPY suffix.
         for CONFIG in "$CROCOGALLERY_PATH"/model2obs/config_*.yaml; do
             [[ -f "$CONFIG" ]] || continue
-            OUTPUT=$(unique_workspace_path "$(basename "$CONFIG" .yaml)" yaml)
+            OUTPUT=$(unique_workspace_path "model2obs.$(basename "$CONFIG" .yaml)" yaml)
             echo "  - $(basename "$CONFIG") -> $OUTPUT"
             cp "$CONFIG" "$OUTPUT"
         done
@@ -351,10 +352,13 @@ fi
 
 # The model2obs tutorials are rendered from CrocoGallery (to match the online
 # gallery) but have to match the installed model2obs code: warn if they differ.
+# The gallery notebooks load their configs with the workspace's model2obs.
+# prefix, so drop it before comparing.
 if [[ "$ENVS_ONLY" -eq 0 && -d "$MODEL2OBS_PATH/tutorials" ]]; then
     for FILE in "$CROCOGALLERY_PATH"/model2obs/{tutorial_MOM6-CL-comparison-*.ipynb,config_*.yaml}; do
         [[ -f "$FILE" ]] || continue
-        cmp -s "$FILE" "$MODEL2OBS_PATH/tutorials/$(basename "$FILE")" \
+        sed 's/model2obs\.config_/config_/g' "$FILE" \
+            | cmp -s - "$MODEL2OBS_PATH/tutorials/$(basename "$FILE")" \
             || echo "WARNING: $(basename "$FILE") differs between CrocoGallery and model2obs"
     done
 fi
